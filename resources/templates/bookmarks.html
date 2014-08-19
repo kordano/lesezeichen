@@ -8,8 +8,11 @@
    <body>
 
      <div class="input-group input-group-lg">
-       <input type="text" class="form-control" placeholder="URL">
-       <span class="input-group-addon glyphicon glyphicon-bookmark">
+       <input type="text" class="form-control" placeholder="URL" id="url-input">
+       <span class="input-group-btn" id="general-input-btn">
+         <button class="btn btn-primary btn-lg" id="bookmark-btn">
+           <span class="glyphicon glyphicon-bookmark"></span>
+         </button>
        </span>
      </div>
 
@@ -18,6 +21,23 @@
        <h3 id="bm-header">Passwords</h3>
      </div>
      <!-- page header end -->
+
+   <!-- url list -->
+   <ul class="list-group" id="url-list">
+     <li class="list-group-item">
+       <div class="row">
+         <h4>
+         <a href="https://topiq.es" target="_blank" class="list-group-item-heading col-md-11 col-xs-11 url-text">TITLE</a>
+         </h4>
+       </div>
+         <small class="url-ts text-muted">
+           today
+         </small>
+     </li>
+   </ul>
+   <!-- url list end -->
+
+
 
     <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
