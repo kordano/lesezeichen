@@ -35,7 +35,7 @@
 
 
 ;; weasel websocket
-(if (= "localhost" (.getDomain uri))
+#_(if (= "localhost" (.getDomain uri))
   (do
     (figw/watch-and-reload
      ;; :websocket-url "ws://localhost:3449/figwheel-ws" default

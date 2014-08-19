@@ -6,7 +6,13 @@ A simple url collecting application using geschichte synching.
 
 A couchdb instance is required.
 
-Run it with
+For quick intro compile clojurescript
+
+```
+lein cljsbuild once dev
+```
+
+and run it with
 ```
 lein run resources/server-config.edn
 ```

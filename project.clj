@@ -37,7 +37,7 @@
 
   :min-lein-version "2.0.0"
 
-  :main tresor.core
+  :main lesezeichen.core
 
   :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
