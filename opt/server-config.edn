@@ -1,6 +1,8 @@
 {:build :prod
  :behind-proxy true
  :proto "https"
+ :version 0.01
+ :date "2014-08-19"
  :port 8087
  :host "lesezeichen.polyc0l0r.net" ;; adjust hostname
  :couchdb-url (str "http://" (or (System/getenv "DB_PORT_5984_TCP_ADDR") "localhost") ":5984")
