@@ -154,7 +154,7 @@
         (if ssl?  "wss://" "ws://")
         (.getDomain uri)
         (when (= (.getDomain uri) "localhost")
-          (str ":" 8086 #_(.getPort uri)))
+          (str ":" 8087 #_(.getPort uri)))
         "/geschichte/ws")))
 
   (defn bookmark-view [app owner]
