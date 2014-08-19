@@ -17,6 +17,8 @@ and run it with
 lein run resources/server-config.edn
 ```
 
+Then visit <http://localhost:8087/>
+
 ## License
 
 Copyright © 2014 Konrad Kühne
