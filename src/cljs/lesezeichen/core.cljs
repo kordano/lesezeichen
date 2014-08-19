@@ -110,7 +110,7 @@
   {[:.url-text] (do->
                  (set-attr :href (:url bookmark))
                  (content (:url bookmark)))
-   [:.url-ts] (content (:ts bookmark))})
+   [:.url-ts] (content (.toLocaleString (:ts bookmark)))})
 
 
 (deftemplate bookmarks "templates/bookmarks.html"
