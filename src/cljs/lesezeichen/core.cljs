@@ -118,7 +118,7 @@
                        (listen :on-change #(do
                                              (println (:url-input-text state))
                                              (handle-text-change % owner :url-input-text))))
-   [:#url-list] (content (map #(url %) (get-bookmarks app)))
+   [:#url-list] (content (map #(url %) (sort-by :ts > (get-bookmarks app))))
    [:#bookmark-btn] (listen :on-click (fn [e]
                                         (do
                                           (if (clojure.string/blank? (:url-input-text state))
@@ -173,25 +173,7 @@
 
 
 
-
 (comment
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   (-> @stage :volatile :peer deref :volatile :store :state deref)
 
