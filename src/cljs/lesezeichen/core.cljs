@@ -107,7 +107,9 @@
 
 (defsnippet url "templates/bookmarks.html" [:.list-group-item]
   [bookmark]
-  {[:.url-text] (content (:url bookmark))
+  {[:.url-text] (do->
+                 (set-attr :href (:url bookmark))
+                 (content (:url bookmark)))
    [:.url-ts] (content (:ts bookmark))})
 
 
@@ -115,17 +117,18 @@
   [app owner state]
   {[:#bm-header] (content "Recent bookmarks")
    [:#url-input] (do-> (set-attr :value (:url-input-text state))
-                       (listen :on-change #(do
-                                             (println (:url-input-text state))
-                                             (handle-text-change % owner :url-input-text))))
+                       (listen :on-change #(do (println (:url-input-text state))
+                                               (handle-text-change % owner :url-input-text))))
    [:#url-list] (content (map #(url %) (sort-by :ts > (get-bookmarks app))))
-   [:#bookmark-btn] (listen :on-click (fn [e]
-                                        (do
-                                          (if (clojure.string/blank? (:url-input-text state))
-                                            (println "no input")
-                                            (do
-                                              (add-bookmark owner)
-                                              (om/set-state! owner :url-input-text ""))))))})
+   [:#bookmark-btn] (listen
+                     :on-click
+                     (fn [e]
+                       (do
+                         (if (clojure.string/blank? (:url-input-text state))
+                           (println "no input")
+                           (do
+                             (add-bookmark owner)
+                             (om/set-state! owner :url-input-text ""))))))})
 
 
 ;; --- INIT ---
