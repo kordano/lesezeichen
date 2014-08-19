@@ -1,0 +1,2 @@
+#!/bin/bash
+cd /opt/lesezeichen; lein cljsbuild clean;lein cljsbuild once prod

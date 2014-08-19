@@ -1,0 +1,2 @@
+#!/bin/bash
+cd /opt/lesezeichen; lein run /opt/server-config.edn
