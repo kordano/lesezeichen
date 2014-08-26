@@ -118,7 +118,22 @@
   {[:#bm-header] (content "Recent bookmarks")
    [:#url-input] (do-> (set-attr :value (:url-input-text state))
                        (listen :on-change #(do (println (:url-input-text state))
-                                               (handle-text-change % owner :url-input-text))))
+                                               (handle-text-change % owner :url-input-text))
+                               :on-key-down #(if (= (.-keyCode %) 10)
+                                               (do
+                                                 (if (clojure.string/blank? (:url-input-text state))
+                                                   (println "no input")
+                                                   (do
+                                                     (add-bookmark owner)
+                                                     (om/set-state! owner :url-input-text ""))))
+                                                  (when (= (.-which %) 13)
+                                                    (when (.-ctrlKey %)
+                                                      (do
+                                                        (if (clojure.string/blank? (:url-input-text state))
+                                                          (println "no input")
+                                                          (do
+                                                            (add-bookmark owner)
+                                                            (om/set-state! owner :url-input-text "")))))))))
    [:#url-list] (content (map #(url %) (sort-by :ts > (get-bookmarks app))))
    [:#bookmark-btn] (listen
                      :on-click
