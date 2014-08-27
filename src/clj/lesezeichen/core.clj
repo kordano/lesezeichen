@@ -10,7 +10,9 @@
             [geschichte.meta :refer [update]]
             [geschichte.sync :refer [server-peer client-peer]]
             [geschichte.platform :refer [create-http-kit-handler!]]
-            [geschichte.auth :refer [auth]]
+            [geschichte.p2p.auth :refer [auth]]
+            [geschichte.p2p.fetch :refer [fetch]]
+            [geschichte.p2p.publish-on-request :refer [publish-on-request]]
             [konserve.store :refer [new-mem-store]]
             [konserve.platform :refer [new-couch-store]]
             [compojure.handler :refer [site api]]
@@ -73,7 +75,8 @@
                               "/geschichte/ws")
                          tag-table)
                         store
-                        (partial auth store auth-fn cred-fn (atom (or (:trusted-hosts @state) #{}))))))
+                        (comp (partial publish-on-request store)
+                              (partial fetch store)))))
   state)
 
 (defroutes handler
