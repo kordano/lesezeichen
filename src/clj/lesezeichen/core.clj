@@ -76,7 +76,8 @@
                          tag-table)
                         store
                         (comp (partial publish-on-request store)
-                              (partial fetch store)))))
+                              (partial fetch store)
+                              (partial auth store auth-fn cred-fn (atom #{}))))))
   state)
 
 (defroutes handler
