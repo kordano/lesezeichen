@@ -6,9 +6,7 @@
             [geschichte.stage :as s]
             [geschichte.sync :refer [client-peer]]
             [konserve.store :refer [new-mem-store]]
-            [geschichte.p2p.auth :refer [auth]]
-            [geschichte.p2p.fetch :refer [fetch]]
-            [geschichte.p2p.publish-on-request :refer [publish-on-request]]
+            [geschichte.auth :refer [auth]]
             [cljs.core.async :refer [put! chan <! >! alts! timeout close!] :as async]
             [cljs.reader :refer [read-string] :as read]
             [kioo.om :refer [content set-attr do-> substitute listen]]
@@ -156,9 +154,7 @@
                     "{#uuid \"1c790d98-ab31-58be-94b8-408c3c39cca4\" #datascript/DB {:schema {:bookmarks {:db/cardinality :db.cardinality/many}, :users {:db/cardinality :db.cardinality/many}}, :datoms []}, #uuid \"123ed64b-1e25-59fc-8c5b-038636ae6c3d\" (fn replace [old params] params), #uuid \"0c797a78-0821-5b74-8688-ec5bacec09c8\" {:transactions [[#uuid \"1c790d98-ab31-58be-94b8-408c3c39cca4\" #uuid \"123ed64b-1e25-59fc-8c5b-038636ae6c3d\"]], :parents [], :ts #inst \"2014-08-19T10:12:44.265-00:00\", :author \"eve@polyc0l0r.net\"}, \"eve@polyc0l0r.net\" {#uuid \"84026416-bea6-409d-9167-37d30b49d55a\" {:description \"bookmarks\", :schema {:type \"http://github.com/ghubber/geschichte\", :version 1}, :pull-requests {}, :causal-order {#uuid \"0c797a78-0821-5b74-8688-ec5bacec09c8\" []}, :public false, :branches {\"master\" #{#uuid \"0c797a78-0821-5b74-8688-ec5bacec09c8\"}}, :head \"master\", :last-update #inst \"2014-08-19T10:12:44.265-00:00\", :id #uuid \"84026416-bea6-409d-9167-37d30b49d55a\"}}}")
                    (atom {'datascript/Datom datascript/datom-from-reader
                           'datascript/DB datascript/db-from-reader})))))
-  (def peer (client-peer "CLIENT-PEER" store (comp (partial publish-on-request store)
-                                                   (partial fetch store)
-                                                   (partial auth store (fn [users] {"eve@polyc0l0r.net" "lisp"}) (fn [token] true)))))
+  (def peer (client-peer "CLIENT-PEER" store (partial auth store auth-fn (fn [creds] nil) trusted-hosts)))
 
 
   (def stage (<! (s/create-stage! "eve@polyc0l0r.net" peer eval-fn)))
