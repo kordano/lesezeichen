@@ -1,10 +1,8 @@
 # lesezeichen
 
-A simple url collecting application using geschichte synching.
+A simple url collecting application using datomic as backend storage and Om as frontend framework.
 
 ## Usage
-
-A couchdb instance is required.
 
 For quick intro compile clojurescript
 
