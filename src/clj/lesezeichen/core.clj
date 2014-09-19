@@ -5,29 +5,12 @@
             [clojure.java.io :as io]
             [compojure.route :refer [resources]]
             [compojure.core :refer [GET POST defroutes]]
-            [geschichte.repo :as repo]
-            [geschichte.stage :as s]
-            [geschichte.meta :refer [update]]
-            [geschichte.sync :refer [server-peer client-peer]]
-            [geschichte.platform :refer [create-http-kit-handler!]]
-            [geschichte.auth :refer [auth]]
-            [konserve.store :refer [new-mem-store]]
-            [konserve.platform :refer [new-couch-store]]
             [compojure.handler :refer [site api]]
+            [lesezeichen.db :refer :all]
             [org.httpkit.server :refer [with-channel on-close on-receive run-server send!]]
-            [ring.util.response :as resp]
-            [cemerick.friend :as friend]
-            [cemerick.friend.workflows :as workflows]
-            [cemerick.friend.credentials :as creds]
-            [clojure.core.async :refer [timeout sub chan <!! >!! <! >! go go-loop] :as async]
-            [com.ashafa.clutch.utils :as utils]
-            [com.ashafa.clutch :refer [couch]]
-            #_[postal.core :as postal]
-            [clojure.tools.logging :refer [info warn error]]))
-
+            [ring.util.response :as resp]))
 
 (def server-state (atom nil))
-
 
 (deftemplate static-page
   (io/resource "public/index.html")
@@ -39,61 +22,45 @@
   [:#js-files] (substitute (html [:script {:src "js/main.js" :type "text/javascript"}])))
 
 
-(defn create-store
-  "Creates a konserve store"
-  [state]
-  (swap!
-   state
-   (fn [old new] (assoc-in old [:store] new))
-   #_(<!! (new-mem-store))
-   (<!! (new-couch-store
-             (couch (utils/url (:couchdb-url @state) "lesezeichen"))
-             (:tag-table @state))))
-  state)
+(defn fetch-url [url]
+  (enlive/html-resource (java.net.URL. url)))
 
-(defn- cred-fn [creds]
-  (creds/bcrypt-credential-fn {"eve@polyc0l0r.net" {:username "eve@polyc0l0r.net"
-                                                    :password (creds/hash-bcrypt "lisp")
-                                                    :roles #{::user}}} creds))
-(defn- auth-fn [users]
-  (go (println "AUTH-REQUIRED: " users)
-    {}))
+(defn fetch-url-title [url]
+  "fetch url and extract title"
+  (-> (fetch-url url)
+      (enlive/select [:head :title])
+      first
+      :content
+      first))
 
-(defn create-peer
-  "Creates geschichte server peer"
-  [state]
-  (let [{:keys [proto host port build tag-table store trusted-hosts]} @state]
-    (swap! state
-           (fn [old new] (assoc-in old [:peer] new))
-           (server-peer (create-http-kit-handler!
-                         (str (if (= proto "https") "wss" "ws") ;; should always be wss with auth
-                              "://" host
-                              (when (= :dev build)
-                                (str ":" port))
-                              "/geschichte/ws")
-                         tag-table)
-                        store
-                        (partial auth store auth-fn cred-fn (atom (or (:trusted-hosts @state) #{}))))))
-  state)
 
+(defn dispatch [{:keys [topic data]}]
+  (case topic
+    :get-user-bookmarks {:topic topic :data (get-user-bookmarks data)}
+    :add-bookmark {:topic topic :data (add-bookmark (assoc data :title (fetch-url-title (:url data))))}
+    {:topic :error :data :unknown-request}))
+
+
+(defn bookmark-handler
+  "Handle incoming requests"
+  [request]
+  (with-channel request channel
+    (on-close channel (fn [status] (println "tweet channel closed: " status "!")))
+    (on-receive channel (fn [msg]
+                          (do
+                            (println msg)
+                            (send! channel (str (dispatch msg))))))))
 
 (defroutes handler
   (resources "/")
-
-  (GET "/geschichte/ws" [] (-> @server-state :peer deref :volatile :handler))
-
+  (GET "/bookmark/ws" [] bookmark-handler)
   (GET "/*" [] (if (= (:build @server-state) :prod)
                  (static-page)
                  (io/resource "public/index.html"))))
 
 
 (defn read-config [state path]
-  (let [config (-> path slurp read-string
-                   (update-in [:couchdb-url] eval) ;; maybe something better but I don't want to deal withj system vars in here
-                   (assoc :tag-table
-                     (atom {'datascript.Datom
-                            (fn [val] (info "DATASCRIPT-DATOM:" val)
-                              (konserve.literals.TaggedLiteral. 'datascript.Datom val))})))]
+  (let [config (-> path slurp read-string)]
     (swap! state merge config))
   state)
 
@@ -102,24 +69,26 @@
   "Read in config file, create sync store and peer"
   [state path]
   (-> state
-      (read-config path)
-      create-store
-      create-peer))
+      (read-config path)))
 
 
 (defn start-server [port]
   (do
-    (info (str "Starting server @ port " port))
     (run-server (site #'handler) {:port port :join? false})))
 
 
 (defn -main [& args]
   (init server-state (first args))
-  (info (clojure.pprint/pprint @server-state))
   (start-server (:port @server-state)))
 
 
 (comment
+
+  (init-schema "schema.edn")
+
+  (get-all-bookmarks)
+
+  (get-user-bookmarks "eve@topiq.es")
 
   (init server-state "resources/server-config.edn")
 
