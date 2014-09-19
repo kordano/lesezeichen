@@ -78,16 +78,17 @@
 (defn -main [& args]
   (init server-state (first args))
   (init-schema (:schema @server-state))
+  (add-user {:email "eve@topiq.es"})
   (start-server (:port @server-state)))
 
 
 (comment
 
-  (init-schema "schema.edn")
+  (init server-state "resources/server-config.edn")
+
+  (init-schema (:schema @server-state))
 
   (add-user {:email "eve@topiq.es"})
-
-  (init server-state "resources/server-config.edn")
 
   (def server (start-server (:port @server-state)))
 
