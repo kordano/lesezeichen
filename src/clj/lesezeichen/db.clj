@@ -130,7 +130,9 @@
 
   (:db/txInstant (d/entity (d/db conn) (get-user-id "adam@topiq.es")))
 
-  (get-user-bookmarks "eve@topiq.es")
+  (-> (get-user-bookmarks "eve@topiq.es")
+      first
+      :ts)
 
   (get-user-bookmarks "adam@topiq.es")
 

@@ -25,6 +25,7 @@
 (defn fetch-url [url]
   (enlive/html-resource (java.net.URL. url)))
 
+
 (defn fetch-url-title [url]
   "fetch url and extract title"
   (-> (fetch-url url)
@@ -47,9 +48,7 @@
   (with-channel request channel
     (on-close channel (fn [status] (println "tweet channel closed: " status "!")))
     (on-receive channel (fn [msg]
-                          (do
-                            (println msg)
-                            (send! channel (str (dispatch msg))))))))
+                          (send! channel (str (dispatch (read-string msg))))))))
 
 (defroutes handler
   (resources "/")
@@ -68,8 +67,7 @@
 (defn init
   "Read in config file, create sync store and peer"
   [state path]
-  (-> state
-      (read-config path)))
+  (-> state (read-config path)))
 
 
 (defn start-server [port]
@@ -79,6 +77,7 @@
 
 (defn -main [& args]
   (init server-state (first args))
+  (init-schema (:schema @server-state))
   (start-server (:port @server-state)))
 
 
@@ -86,9 +85,7 @@
 
   (init-schema "schema.edn")
 
-  (get-all-bookmarks)
-
-  (get-user-bookmarks "eve@topiq.es")
+  (add-user {:email "eve@topiq.es"})
 
   (init server-state "resources/server-config.edn")
 
