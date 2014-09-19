@@ -1,12 +1,6 @@
 (ns lesezeichen.core
   (:require [figwheel.client :as figw :include-macros true]
             [weasel.repl :as ws-repl]
-            [hasch.core :refer [uuid]]
-            [datascript :as d]
-            [geschichte.stage :as s]
-            [geschichte.sync :refer [client-peer]]
-            [konserve.store :refer [new-mem-store]]
-            [geschichte.auth :refer [auth]]
             [cljs.core.async :refer [put! chan <! >! alts! timeout close!] :as async]
             [cljs.reader :refer [read-string] :as read]
             [kioo.om :refer [content set-attr do-> substitute listen]]
@@ -43,59 +37,17 @@
     (ws-repl/connect "ws://localhost:17782" :verbose true)))
 
 
-(def eval-fn {'(fn replace [old params] params) (fn replace [old params] params)
-              '(fn [old params] (:db-after (d/transact old params)))
-              (fn [old params] (:db-after (d/transact old params)))})
-
-
-; we can do this runtime wide here, since we only use this datascript version
-(read/register-tag-parser! 'datascript/DB datascript/db-from-reader)
-(read/register-tag-parser! 'datascript/Datom datascript/datom-from-reader)
-
-
-(def trusted-hosts (atom #{:geschichte.stage/stage (.getDomain uri)}))
-
-(defn- auth-fn [users]
-  (go (js/alert (pr-str "AUTH-REQUIRED: " users))
-    {"eve@polyc0l0r.net" "lisp"}))
-
 
 ;; --- DATABASE ---
 
 (defn get-bookmarks [stage]
-  (let [db (om/value
-            (get-in
-             stage
-             ["eve@polyc0l0r.net"
-              #uuid "84026416-bea6-409d-9167-37d30b49d55a"
-              "master"]))
-        query  '[:find ?p ?url ?user ?ts
-                 :where
-                 [?p :url ?url]
-                 [?p :user ?user]
-                 [?p :ts ?ts]]]
-    (map (partial zipmap [:id :url :user :ts])
-         (d/q query db))))
+  (when stage nil))
 
 
 (defn add-bookmark [owner]
   (let [stage (om/get-state owner :stage)
         url (om/get-state owner :url-input-text)]
-   (go
-     (<! (s/transact
-          stage
-          ["eve@polyc0l0r.net"
-           #uuid "84026416-bea6-409d-9167-37d30b49d55a"
-           "master"]
-          [{:db/id (uuid)
-            :url url
-            :user "kordano@hushmail.com"
-            :ts (js/Date.)}]
-          '(fn [old params] (:db-after (d/transact old params)))))
-     (<! (s/commit! stage
-                    {"eve@polyc0l0r.net"
-                     {#uuid "84026416-bea6-409d-9167-37d30b49d55a"
-                      #{"master"}}})))))
+    (when owner nil)))
 
 
 
@@ -147,54 +99,17 @@
 
 
 ;; --- INIT ---
-(go
-  (def store (<! (new-mem-store
-                  (atom
-                   (read-string
-                    "{#uuid \"1c790d98-ab31-58be-94b8-408c3c39cca4\" #datascript/DB {:schema {:bookmarks {:db/cardinality :db.cardinality/many}, :users {:db/cardinality :db.cardinality/many}}, :datoms []}, #uuid \"123ed64b-1e25-59fc-8c5b-038636ae6c3d\" (fn replace [old params] params), #uuid \"0c797a78-0821-5b74-8688-ec5bacec09c8\" {:transactions [[#uuid \"1c790d98-ab31-58be-94b8-408c3c39cca4\" #uuid \"123ed64b-1e25-59fc-8c5b-038636ae6c3d\"]], :parents [], :ts #inst \"2014-08-19T10:12:44.265-00:00\", :author \"eve@polyc0l0r.net\"}, \"eve@polyc0l0r.net\" {#uuid \"84026416-bea6-409d-9167-37d30b49d55a\" {:description \"bookmarks\", :schema {:type \"http://github.com/ghubber/geschichte\", :version 1}, :pull-requests {}, :causal-order {#uuid \"0c797a78-0821-5b74-8688-ec5bacec09c8\" []}, :public false, :branches {\"master\" #{#uuid \"0c797a78-0821-5b74-8688-ec5bacec09c8\"}}, :head \"master\", :last-update #inst \"2014-08-19T10:12:44.265-00:00\", :id #uuid \"84026416-bea6-409d-9167-37d30b49d55a\"}}}")
-                   (atom {'datascript/Datom datascript/datom-from-reader
-                          'datascript/DB datascript/db-from-reader})))))
-  (def peer (client-peer "CLIENT-PEER" store (partial auth store auth-fn (fn [creds] nil) trusted-hosts)))
+(defn bookmark-view [app owner]
+  (reify
+    om/IInitState
+    (init-state [_]
+      {:url-input-text ""
+       :stage stage})
+    om/IRenderState
+    (render-state [this state]
+      (bookmarks app owner state))))
 
-
-  (def stage (<! (s/create-stage! "eve@polyc0l0r.net" peer eval-fn)))
-
-  (<! (s/subscribe-repos! stage {"eve@polyc0l0r.net"
-                           {#uuid "84026416-bea6-409d-9167-37d30b49d55a"
-                            #{"master"}}}))
-
-  (<! (s/connect!
-       stage
-       (str
-        (if ssl?  "wss://" "ws://")
-        (.getDomain uri)
-        (when (= (.getDomain uri) "localhost")
-          (str ":" 8087 #_(.getPort uri)))
-        "/geschichte/ws")))
-
-  (defn bookmark-view [app owner]
-    (reify
-      om/IInitState
-      (init-state [_]
-        {:url-input-text ""
-         :stage stage})
-      om/IRenderState
-      (render-state [this state]
-        (bookmarks app owner state))))
-
-  (om/root
-   bookmark-view
-   (get-in @stage [:volatile :val-atom])
-   {:target (. js/document (getElementById "center-container"))}))
-
-
-
-
-
-(comment
-
-  (-> @stage :volatile :peer deref :volatile :store :state deref)
-
-  (-> @stage :volatile :val-atom deref)
-
-)
+(om/root
+ bookmark-view
+ (get-in @stage [:volatile :val-atom])
+ {:target (. js/document (getElementById "center-container"))})
