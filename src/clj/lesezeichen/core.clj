@@ -23,17 +23,21 @@
 
 
 (defn fetch-url [url]
-  (enlive/html-resource (java.net.URL. url)))
+  (try
+    (enlive/html-resource (java.net.URL. url))
+    (catch Exception e "FAILED")))
 
 
 (defn fetch-url-title [url]
   "fetch url and extract title"
-  (-> (fetch-url url)
-      (enlive/select [:head :title])
-      first
-      :content
-      first))
-
+  (let [res (fetch-url url)]
+    (if (= "FAILED" res)
+      url
+      (-> res
+       (enlive/select [:head :title])
+       first
+       :content
+       first))))
 
 (defn dispatch [{:keys [topic data]}]
   (case topic
@@ -78,7 +82,6 @@
 (defn -main [& args]
   (init server-state (first args))
   (init-schema (:schema @server-state))
-  (add-user {:email "eve@topiq.es"})
   (start-server (:port @server-state)))
 
 

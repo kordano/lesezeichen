@@ -6,7 +6,7 @@
             [lesezeichen.io :refer [transact-all]]))
 
 
-(def db-uri-base "datomic:mem://")
+(def db-uri-base "datomic:free://localhost:4334")
 
 
 (defn- scratch-conn
@@ -18,7 +18,7 @@
     (d/connect uri)))
 
 
-(def conn (scratch-conn))
+(def conn (d/connect (str db-uri-base "/bookmarks")))
 
 
 (defn init-schema [path]
@@ -122,19 +122,19 @@
 
 (comment
 
+  (d/create-database (str db-uri-base "/bookmarks"))
+
+  (d/delete-database (str db-uri-base "/bookmarks"))
+
   (init-schema "schema.edn")
 
   (add-user {:email "eve@topiq.es"})
 
   (add-user {:email "adam@topiq.es"})
 
-  (:db/txInstant (d/entity (d/db conn) (get-user-id "adam@topiq.es")))
-
   (-> (get-user-bookmarks "eve@topiq.es")
       first
       :ts)
-
-  (get-user-bookmarks "adam@topiq.es")
 
   (let [users (get-all-users)]
     (->> users
