@@ -48,18 +48,26 @@
   (when stage nil))
 
 
-(defn add-bookmark [owner]
+;; --- HELPER FUNCTIONS ---
+(defn handle-text-change
+  "Store and update input text in view component"
+  [e owner text]
+  (om/set-state! owner text (.. e -target -value)))
+
+
+(defn send-bookmark
+  "Send bookmark via websocket to server"
+  [state owner]
   (let [url (om/get-state owner :url-input-text)
         ws-in (om/get-state owner :ws-in)]
-    (go (>! ws-in {:topic :add-bookmark :data {:email "eve@topiq.es" :url url}}))))
-
+    (if (clojure.string/blank? url)
+      (println "INFO: no input")
+      (do
+        (go (>! ws-in {:topic :add-bookmark :data {:email "eve@topiq.es" :url url}}))
+        (om/set-state! owner :url-input-text "")))))
 
 
 ;; --- MAIN VIEW ---
-
-(defn handle-text-change [e owner text]
-  (om/set-state! owner text (.. e -target -value)))
-
 
 (defsnippet url "templates/bookmarks.html" [:.list-group-item]
   [{:keys [title url ts]}]
@@ -74,34 +82,18 @@
    [:#url-input] (do-> (set-attr :value (:url-input-text state))
                        (listen :on-change #(handle-text-change % owner :url-input-text)
                                :on-key-down #(if (= (.-keyCode %) 10)
-                                               (do
-                                                 (if (clojure.string/blank? (:url-input-text state))
-                                                   (println "no input")
-                                                   (do
-                                                     (add-bookmark owner)
-                                                     (om/set-state! owner :url-input-text ""))))
-                                                  (when (= (.-which %) 13)
-                                                    (when (.-ctrlKey %)
-                                                      (do
-                                                        (if (clojure.string/blank? (:url-input-text state))
-                                                          (println "no input")
-                                                          (do
-                                                            (add-bookmark owner)
-                                                            (om/set-state! owner :url-input-text "")))))))))
+                                              (send-bookmark state owner)
+                                              (when (= (.-which %) 13)
+                                                (when (.-ctrlKey %)
+                                                  (send-bookmark state owner))))))
    [:#url-list] (content (map #(url %) (sort-by :ts > app)))
-   [:#bookmark-btn] (listen
-                     :on-click
-                     (fn [e]
-                       (do
-                         (if (clojure.string/blank? (:url-input-text state))
-                           (println "no input")
-                           (do
-                             (add-bookmark owner)
-                             (om/set-state! owner :url-input-text ""))))))})
+   [:#bookmark-btn] (listen :on-click (fn [e] (send-bookmark state owner)))})
 
 
 ;; --- INIT ---
-(defn bookmark-view [app owner]
+(defn bookmark-view
+  "Central view containing bookmarks and url input field"
+  [app owner]
   (reify
     om/IInitState
     (init-state [_]
@@ -124,7 +116,9 @@
               :get-user-bookmarks (om/transact! app :bookmarks (fn [old] data))
               :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
               :unknown)
-            (recur (<! out))))))
+            (if in
+              (println "WARNING: Socket connection lost!")
+              (recur (<! out)))))))
     om/IRenderState
     (render-state [this state]
       (bookmarks (:bookmarks app) owner state))))
