@@ -17,8 +17,7 @@
     (d/create-database uri)
     (d/connect uri)))
 
-
-(def conn (d/connect (str db-uri-base "/bookmarks")))
+(def conn (d/connect (str db-uri-base "/lesezeichen")))
 
 
 (defn init-schema [path]
@@ -76,13 +75,17 @@
      (d/q query db url email))))
 
 
-(defn add-bookmark [{:keys [url title email] :as bookmark}]
+(defn add-bookmark
+  "Transact bookmark and return the resulting datom"
+  [{:keys [url title email] :as bookmark}]
   (do
     (transact-bookmark bookmark)
     (get-bookmark bookmark)))
 
 
-(defn get-user-bookmarks [email]
+(defn get-user-bookmarks
+  "Find user's bookmarks"
+  [email]
   (let [query '[:find ?url ?title ?tx
                 :in $ ?email
                 :where
@@ -100,7 +103,9 @@
      (d/q query db email))))
 
 
-(defn get-all-bookmarks []
+(defn get-all-bookmarks
+  "Retrieve all bookmarks"
+  []
   (map
    #(zipmap [:url :title :user] %)
    (d/q '[:find ?url ?title ?email
@@ -111,7 +116,10 @@
           [?uid :user/email ?email]]
         (d/db conn))))
 
-(defn get-all-users []
+
+(defn get-all-users
+  "Retrieve all users"
+  []
   (map
    first
    (d/q '[:find ?email
@@ -122,9 +130,10 @@
 
 (comment
 
-  (d/create-database (str db-uri-base "/bookmarks"))
+  ;; only once for test purposes
+  (d/create-database (str db-uri-base "/lesezeichen"))
 
-  (d/delete-database (str db-uri-base "/bookmarks"))
+  (d/delete-database (str db-uri-base "/lesezeichen"))
 
   (init-schema "schema.edn")
 
@@ -132,23 +141,24 @@
 
   (add-user {:email "adam@topiq.es"})
 
+  (do
+   (add-bookmark {:url "https://topiq.es" :title "TOPIQ" :email "eve@topiq.es"})
+   (add-bookmark {:url "https://google.com" :title "the kraken" :email "eve@topiq.es"})
+   (add-bookmark {:url "https://sup.com" :title "the void 2" :email "adam@topiq.es"})
+   (add-bookmark {:url "http://boo.far" :title "foobar" :email "eve@topiq.es"})
+   (add-bookmark {:url "http://boo.far" :title "foobar" :email "adam@topiq.es"}))
+  ;; -------
+
+
+  ;; some queries
   (-> (get-user-bookmarks "eve@topiq.es")
-      first
-      :ts)
+      aprint)
 
   (let [users (get-all-users)]
     (->> users
          (map get-user-bookmarks)
-         (zipmap users)))
+         (zipmap users)
+         aprint))
 
-  (add-bookmark {:url "https://topiq.es" :title "TOPIQ" :email "eve@topiq.es"})
-
-  (add-bookmark {:url "https://google.com" :title "the kraken" :email "eve@topiq.es"})
-
-  (add-bookmark {:url "https://sup.com" :title "the void 2" :email "adam@topiq.es"})
-
-  (add-bookmark {:url "http://boo.far" :title "foobar" :email "eve@topiq.es"})
-
-  (add-bookmark {:url "http://boo.far" :title "foobar" :email "adam@topiq.es"})
 
   )
