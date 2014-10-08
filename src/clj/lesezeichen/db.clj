@@ -24,7 +24,7 @@
     (d/connect uri)))
 
 
-(defn init-schema [path]
+(defn init-schema [conn path]
   (transact-all conn (io/resource path)))
 
 
@@ -134,10 +134,7 @@
 
 (comment
 
-  ;; only once for test purposes
-  (d/create-database (str db-uri-base "/lesezeichen"))
-
-  (d/delete-database (str db-uri-base "/lesezeichen"))
+  (def conn (db-conn))
 
   (init-schema "schema.edn")
 

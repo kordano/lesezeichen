@@ -71,6 +71,7 @@
 
 (defn init-db [state]
   (swap! state #(assoc %1 :conn %2) (db-conn))
+  (init-schema (:conn @state) (:schema @server-state))
   state)
 
 (defn init
@@ -83,7 +84,7 @@
 
 (defn -main [& args]
   (init server-state (first args))
-  (init-schema (:schema @server-state))
+
   (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
 
