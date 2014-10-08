@@ -1,0 +1,2 @@
+#!/bin/bash
+cd /opt/bin/; wget https://my.datomic.com/downloads/free/0.9.4899; unzip 0.94899; mv datomic-free-0.9.4899 datomic; /opt/bin/datomic/bin/transactor /opt/bookmarks.properties
