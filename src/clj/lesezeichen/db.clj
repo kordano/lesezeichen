@@ -6,7 +6,7 @@
             [lesezeichen.io :refer [transact-all]]))
 
 
-(def db-uri-base "datomic:free://bookie.polyc0l0r.net:4334")
+(def db-uri-base "datomic:mem://")
 
 
 (defn- scratch-conn
