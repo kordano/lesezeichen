@@ -84,7 +84,8 @@
 
 (defn -main [& args]
   (init server-state (first args))
-
+  (when (:cold-start @server-state)
+    (add-user (:conn @server-state) {:email "eve@topiq.es"}))
   (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
 
@@ -95,7 +96,7 @@
   ;; on first startup initialize datomic schema
   (init-schema (:schema @server-state))
 
-  (def server (start-server (:port @server-state)))
+  (def server (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
   (server)
 
