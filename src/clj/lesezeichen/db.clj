@@ -53,7 +53,7 @@
 
 
 (defn transact-bookmark [conn {:keys [url title email]}]
-  (let [uid (get-user-id email)]
+  (let [uid (get-user-id conn email)]
     (d/transact
      conn
      [{:db/id (d/tempid :db.part/user)
