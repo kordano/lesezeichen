@@ -14,8 +14,6 @@
 
 (enable-console-print!)
 
-(println "ALL HAIL TO MASTER KONNY!")
-
 (def uri (goog.Uri. js/location.href))
 
 (def ssl? (= (.getScheme uri) "https"))
@@ -32,20 +30,13 @@
                    :ip "0.0.0.0" :port 9001)))
 
 
-;; weasel websocket
-(if (= "localhost" (.getDomain uri))
+;; weasel websocket, development only
+#_(if (= "localhost" (.getDomain uri))
   (do
     #_(ws-repl/connect "ws://localhost:9001" :verbose true)
     (figw/watch-and-reload
      ;; :websocket-url "ws://localhost:3449/figwheel-ws" default
      :jsload-callback (fn [] (print "reloaded")))))
-
-
-
-;; --- DATABASE ---
-
-(defn get-bookmarks [stage]
-  (when stage nil))
 
 
 ;; --- HELPER FUNCTIONS ---
@@ -74,6 +65,7 @@
   {[:.url-text] (do-> (set-attr :href url)
                       (content (if (= "" title) url title)))
    [:.url-ts] (content (.toLocaleString ts))})
+
 
 
 (deftemplate bookmarks "templates/bookmarks.html"
@@ -116,9 +108,8 @@
               :get-user-bookmarks (om/transact! app :bookmarks (fn [old] data))
               :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
               :unknown)
-            (if in
-              (println "WARNING: Socket connection lost!")
-              (recur (<! out)))))))
+            (if-let [package (<! out)]
+              (recur package))))))
     om/IRenderState
     (render-state [this state]
       (bookmarks (:bookmarks app) owner state))))
