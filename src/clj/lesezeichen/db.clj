@@ -12,26 +12,30 @@
 (defn- scratch-conn
   "Create a connection to an anonymous, in-memory database."
   []
-  (let [uri (str db-uri-base (d/squuid))]
+  (let [uri (str "datomic:mem://" (d/squuid))]
     (d/delete-database uri)
     (d/create-database uri)
     (d/connect uri)))
 
-(def conn (d/connect (str db-uri-base "/lesezeichen")))
+
+(defn db-conn []
+  (let [uri (str db-uri-base "/lesezeichen")]
+    (d/create-database uri)
+    (d/connect uri)))
 
 
 (defn init-schema [path]
   (transact-all conn (io/resource path)))
 
 
-(defn add-user [{:keys [email]}]
+(defn add-user [conn {:keys [email]}]
   (d/transact
    conn
    [{:db/id (d/tempid :db.part/user)
      :user/email email}]))
 
 
-(defn- get-user-id [email]
+(defn- get-user-id [conn email]
   (let [query '[:find ?e
                :in $ ?email
                :where
@@ -40,7 +44,7 @@
     (ffirst (d/q query db email))))
 
 
-(defn- get-tx-id [eid attr]
+(defn- get-tx-id [conn eid attr]
   (let [query '[:find ?tx
                 :in $ ?e ?attr
                 :where [?e ?attr _ ?tx]]
@@ -48,7 +52,7 @@
     (d/q query db eid attr)))
 
 
-(defn transact-bookmark [{:keys [url title email]}]
+(defn transact-bookmark [conn {:keys [url title email]}]
   (let [uid (get-user-id email)]
     (d/transact
      conn
@@ -57,7 +61,7 @@
        :bookmark/title title
        :bookmark/user uid}])))
 
-(defn get-bookmark [{:keys [url email]}]
+(defn get-bookmark [conn {:keys [url email]}]
   (let [query '[:find ?url ?title ?tx
                :in $ ?url ?email
                :where
@@ -77,15 +81,15 @@
 
 (defn add-bookmark
   "Transact bookmark and return the resulting datom"
-  [{:keys [url title email] :as bookmark}]
+  [conn {:keys [url title email] :as bookmark}]
   (do
-    (transact-bookmark bookmark)
-    (get-bookmark bookmark)))
+    (transact-bookmark conn bookmark)
+    (get-bookmark conn bookmark)))
 
 
 (defn get-user-bookmarks
   "Find user's bookmarks"
-  [email]
+  [conn email]
   (let [query '[:find ?url ?title ?tx
                 :in $ ?email
                 :where
@@ -105,7 +109,7 @@
 
 (defn get-all-bookmarks
   "Retrieve all bookmarks"
-  []
+  [conn]
   (map
    #(zipmap [:url :title :user] %)
    (d/q '[:find ?url ?title ?email
@@ -119,7 +123,7 @@
 
 (defn get-all-users
   "Retrieve all users"
-  []
+  [conn]
   (map
    first
    (d/q '[:find ?email
