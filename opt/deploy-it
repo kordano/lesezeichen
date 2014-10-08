@@ -1,2 +1,2 @@
 #!/bin/bash
-docker stop lesezeichen; docker rm lesezeichen;  docker run -d -v /home/konrad/volumes/lesezeichen/data:/opt/data -v /home/konrad/volumes/lesezeichen/bin:/opt/bin --link couchdb:db --name lesezeichen -p 8087:8087 kordano/lesezeichen
+docker stop lesezeichen; docker rm lesezeichen;  docker run -d -v /home/konrad/volumes/lesezeichen/data:/opt/data -v /home/konrad/volumes/lesezeichen/bin:/opt/bin --name bookie -p 8087:8087 kordano/bookie
