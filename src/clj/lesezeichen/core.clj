@@ -28,21 +28,22 @@
     (catch Exception e "FAILED")))
 
 
-(defn fetch-url-title [url]
+(defn fetch-url-title
   "fetch url and extract title"
+  [url]
   (let [res (fetch-url url)]
     (if (= "FAILED" res)
       url
-      (-> res
-       (enlive/select [:head :title])
-       first
-       :content
-       first))))
+      (-> res (enlive/select [:head :title]) first :content first))))
+
 
 (defn dispatch [{:keys [topic data]}]
   (case topic
-    :get-user-bookmarks {:topic topic :data (get-user-bookmarks data)}
-    :add-bookmark {:topic topic :data (add-bookmark (assoc data :title (fetch-url-title (:url data))))}
+    :get-user-bookmarks {:topic topic
+                         :data (get-user-bookmarks (:conn @server-state) data)}
+    :add-bookmark {:topic topic
+                   :data (add-bookmark (:conn @server-state)
+                                       (assoc data :title (fetch-url-title (:url data))))}
     {:topic :error :data :unknown-request}))
 
 
@@ -68,30 +69,30 @@
   state)
 
 
+(defn init-db [state]
+  (swap! state #(assoc %1 :conn %2) (db-conn))
+  state)
+
 (defn init
   "Read in config file, create sync store and peer"
   [state path]
-  (-> state (read-config path)))
-
-
-(defn start-server [port]
-  (do
-    (run-server (site #'handler) {:port port :join? false})))
+  (-> state
+      (read-config path)
+      init-db))
 
 
 (defn -main [& args]
   (init server-state (first args))
   (init-schema (:schema @server-state))
-  (start-server (:port @server-state)))
+  (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
 
 (comment
 
   (init server-state "resources/server-config.edn")
 
+  ;; on first startup initialize datomic schema
   (init-schema (:schema @server-state))
-
-  (add-user {:email "eve@topiq.es"})
 
   (def server (start-server (:port @server-state)))
 
