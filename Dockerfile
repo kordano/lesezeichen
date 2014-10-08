@@ -21,11 +21,11 @@ RUN chmod +x /usr/local/bin/lein
 ENV LEIN_ROOT yes
 RUN lein
 
-# fetch and start datomic instance
-RUN /opt/fetch-n-start-datomic
-
 # add scripts
 ADD ./opt /opt
+
+# fetch and start datomic instance
+RUN /opt/fetch-n-start-datomic
 
 # grab project
 RUN git clone https://github.com/kordano/lesezeichen.git /opt/lesezeichen
