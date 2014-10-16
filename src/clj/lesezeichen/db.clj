@@ -6,7 +6,7 @@
             [lesezeichen.io :refer [transact-all]]))
 
 
-(def db-uri-base "datomic:dev://0.0.0.0:4334")
+(def db-uri-base "datomic:free://0.0.0.0:4334")
 
 (defn- scratch-conn
   "Create a connection to an anonymous, in-memory database."
@@ -135,28 +135,29 @@
 
   (def conn (db-conn))
 
-  (init-schema "schema.edn")
+  (init-schema conn "schema.edn")
 
-  (add-user {:email "eve@topiq.es"})
+  (add-user conn {:email "eve@topiq.es"})
 
-  (add-user {:email "adam@topiq.es"})
+  (add-user conn {:email "adam@topiq.es"})
 
-  (do
-   (add-bookmark {:url "https://topiq.es" :title "TOPIQ" :email "eve@topiq.es"})
-   (add-bookmark {:url "https://google.com" :title "the kraken" :email "eve@topiq.es"})
-   (add-bookmark {:url "https://sup.com" :title "the void 2" :email "adam@topiq.es"})
-   (add-bookmark {:url "http://boo.far" :title "foobar" :email "eve@topiq.es"})
-   (add-bookmark {:url "http://boo.far" :title "foobar" :email "adam@topiq.es"}))
+  (doall
+      [(add-bookmark conn {:url "https://topiq.es" :title "TOPIQ" :email "eve@topiq.es"})
+       (add-bookmark conn {:url "https://google.com" :title "the kraken" :email "eve@topiq.es"})
+       (add-bookmark conn {:url "https://sup.com" :title "the void 2" :email "adam@topiq.es"})
+       (add-bookmark conn {:url "http://boo.far" :title "foobar" :email "eve@topiq.es"})
+       (add-bookmark conn {:url "http://boo.far" :title "foobar" :email "adam@topiq.es"})])
+
   ;; -------
 
 
   ;; some queries
-  (-> (get-user-bookmarks "eve@topiq.es")
+  (-> (get-user-bookmarks conn "eve@topiq.es")
       aprint)
 
-  (let [users (get-all-users)]
+  (let [users (get-all-users conn)]
     (->> users
-         (map get-user-bookmarks)
+         (map #(get-user-bookmarks conn %))
          (zipmap users)
          aprint))
 
