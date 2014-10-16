@@ -21,11 +21,13 @@ RUN chmod +x /usr/local/bin/lein
 ENV LEIN_ROOT yes
 RUN lein
 
+# grab datomic
+RUN wget https://my.datomic.com/downloads/free/0.9.4899 -O /opt/datomic.zip
+RUN unzip /opt/datomic.zip -d /opt
+RUN mv /opt/datomic-free-0.9.4899 /opt/datomic
+
 # add scripts
 ADD ./opt /opt
-
-# fetch datomic
-RUN /opt/fetch-datomic
 
 # grab project
 RUN git clone https://github.com/kordano/lesezeichen.git /opt/lesezeichen
