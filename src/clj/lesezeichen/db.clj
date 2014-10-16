@@ -6,8 +6,7 @@
             [lesezeichen.io :refer [transact-all]]))
 
 
-(def db-uri-base "datomic:mem://")
-
+(def db-uri-base "datomic:dev://0.0.0.0:4334")
 
 (defn- scratch-conn
   "Create a connection to an anonymous, in-memory database."
