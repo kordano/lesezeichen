@@ -1,2 +1,2 @@
 #!/bin/bash
-docker stop bookie; docker rm bookie;  docker run -d -v /home/konrad/volumes/lesezeichen/data:/opt/data -v /home/konrad/volumes/lesezeichen/bin:/opt/bin --name bookie -p 8087:8087 kordano/bookie
+docker stop bookie; docker rm bookie;  docker run -d -v /home/konny/.bin/datomic:/opt/datomic  --name bookie -p 8087:8087 kordano/bookie

@@ -1,2 +1,5 @@
 #!/bin/bash
+# start datomic
+./opt/datomic/transactor ~/opt/bookmarks.properties;
+# start lesezeichen
 cd /opt/lesezeichen; lein run /opt/server-config.edn
