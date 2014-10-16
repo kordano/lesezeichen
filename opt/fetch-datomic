@@ -1,0 +1,2 @@
+#!/bin/bash
+cd /opt/; wget https://my.datomic.com/downloads/free/0.9.4899; unzip 0.9.4899; mv datomic-free-0.9.4899 datomic;

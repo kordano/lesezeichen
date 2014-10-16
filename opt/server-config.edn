@@ -1,12 +1,11 @@
 {:build :prod
  :behind-proxy true
  :proto "https"
- :version 0.01
- :date "2014-08-19"
+ :version 0.02
+ :date "2014-10-16"
  :port 8087
  :schema "schema.edn"
  :cold-start true
  :host "lesezeichen.polyc0l0r.net" ;; adjust hostname
- :couchdb-url (str "http://" (or (System/getenv "DB_PORT_5984_TCP_ADDR") "localhost") ":5984")
  :trusted-hosts #{}
  }

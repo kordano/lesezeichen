@@ -24,6 +24,9 @@ RUN lein
 # add scripts
 ADD ./opt /opt
 
+# fetch datomic
+RUN /opt/fetch-datomic
+
 # grab project
 RUN git clone https://github.com/kordano/lesezeichen.git /opt/lesezeichen
 
