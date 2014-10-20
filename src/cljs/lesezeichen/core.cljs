@@ -35,7 +35,6 @@
   (do
     #_(ws-repl/connect "ws://localhost:9001" :verbose true)
     (figw/watch-and-reload
-     ;; :websocket-url "ws://localhost:3449/figwheel-ws" default
      :jsload-callback (fn [] (print "reloaded")))))
 
 
@@ -58,6 +57,7 @@
         (om/set-state! owner :url-input-text "")))))
 
 
+
 ;; --- MAIN VIEW ---
 
 (defsnippet url "templates/bookmarks.html" [:.list-group-item]
@@ -67,19 +67,17 @@
    [:.url-ts] (content (.toLocaleString ts))})
 
 
-
 (deftemplate bookmarks "templates/bookmarks.html"
   [app owner state]
   {[:#bm-header] (content "Recent bookmarks")
-   [:#url-input] (do-> (set-attr :value (:url-input-text state))
-                       (listen :on-change #(handle-text-change % owner :url-input-text)
-                               :on-key-down #(if (= (.-keyCode %) 10)
-                                              (send-bookmark state owner)
-                                              (when (= (.-which %) 13)
-                                                (when (.-ctrlKey %)
-                                                  (send-bookmark state owner))))))
+   [:#url-input] (do-> (set-attr :value (:search-text state))
+                       (listen :on-change #(handle-text-change % owner :search-text)
+                               ;; :on-key-down #(if (= (.-keyCode %) 10) #_(send-bookmark state owner) (when (= (.-which %) 13) (when (.-ctrlKey %) (send-bookmark state owner))))
+                               ))
    [:#url-list] (content (map #(url %) (sort-by :ts > app)))
-   [:#bookmark-btn] (listen :on-click (fn [e] (send-bookmark state owner)))})
+   [:#bookmark-btn] (listen :on-click (fn [e]
+                                        (println "Yes, my lord?")
+                                        #_(send-bookmark state owner)))})
 
 
 ;; --- INIT ---
@@ -90,6 +88,7 @@
     om/IInitState
     (init-state [_]
       {:url-input-text ""
+       :search-text ""
        :ws-in (chan)})
     om/IWillMount
     (will-mount [_]
@@ -103,7 +102,6 @@
           (om/set-state! owner :ws-in in)
           (>! in {:topic :get-user-bookmarks :data "eve@topiq.es"})
           (loop [{:keys [topic data]} (<! out)]
-            (println "OUT" data)
             (case topic
               :get-user-bookmarks (om/transact! app :bookmarks (fn [old] data))
               :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
@@ -112,7 +110,16 @@
               (recur package))))))
     om/IRenderState
     (render-state [this state]
-      (bookmarks (:bookmarks app) owner state))))
+      (bookmarks (if (not (clojure.string/blank? (:search-text state)))
+                   (remove
+                    (fn [bookmark]
+                      (nil?
+                       (re-find
+                        (re-pattern (clojure.string/lower-case (:search-text state)))
+                        (clojure.string/lower-case (:title bookmark)))))
+                    (:bookmarks app))
+                   (:bookmarks app))
+                 owner state))))
 
 
 (om/root
