@@ -9,7 +9,7 @@
 
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/clojurescript "0.0-2342"]
-                 [org.clojure/core.async "0.1.303.0-886421-alpha"]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [org.clojure/core.memoize "0.5.6"]
 
                  [http-kit "2.1.19"]
@@ -25,7 +25,7 @@
                  [kioo "0.4.0"]
                  [figwheel "0.1.4-SNAPSHOT"]
                  [com.facebook/react "0.11.2"]
-
+                 [facts/speech-synthesis "1.0.0"]
                  [clj-time "0.8.0"]
                  [aprint "0.1.0"]
                  [weasel "0.3.0"]]

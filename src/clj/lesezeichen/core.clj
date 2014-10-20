@@ -8,9 +8,10 @@
             [compojure.handler :refer [site api]]
             [lesezeichen.db :refer :all]
             [org.httpkit.server :refer [with-channel on-close on-receive run-server send!]]
+            [clojure.core.async :refer [chan >! <! go go-loop put! close!]]
             [ring.util.response :as resp]))
 
-(def server-state (atom nil))
+(def server-state (atom {:out-chans []}))
 
 (deftemplate static-page
   (io/resource "public/index.html")
@@ -50,10 +51,21 @@
 (defn bookmark-handler
   "Handle incoming requests"
   [request]
-  (with-channel request channel
-    (on-close channel (fn [status] (println "tweet channel closed: " status "!")))
-    (on-receive channel (fn [msg]
-                          (send! channel (str (dispatch (read-string msg))))))))
+  (let [out-ch (chan)]
+    (with-channel request channel
+      (swap! server-state update-in [:out-chans] conj out-ch)
+      (go-loop [m (<! out-ch)]
+        (when m
+          (send! channel m)
+          (recur (<! out-ch))))
+      (on-close channel (fn [status]
+                          (swap! server-state update-in [:out-chans] (fn [old new] (vec (remove #(= new %) old))) out-ch)
+                          (close! out-ch)))
+      (on-receive channel (fn [msg] (let [data (str (dispatch (read-string msg)))]
+                                     (send! channel data)
+                                     (doall
+                                      (map #(put! % data) (remove #{out-ch} (:out-chans @server-state))))))))))
+
 
 (defroutes handler
   (resources "/")
@@ -71,8 +83,8 @@
 
 (defn init-db [state]
   (swap! state #(assoc %1 :conn %2) (db-conn))
-  (init-schema (:conn @state) (:schema @server-state))
   state)
+
 
 (defn init
   "Read in config file, create sync store and peer"
@@ -85,6 +97,7 @@
 (defn -main [& args]
   (init server-state (first args))
   (when (:cold-start @server-state)
+    (init-schema (:conn @server-state) (:schema @server-state))
     (add-user (:conn @server-state) {:email "eve@topiq.es"}))
   (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
@@ -99,5 +112,7 @@
   (def server (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
   (server)
+
+  (:out-chans @server-state)
 
 )
