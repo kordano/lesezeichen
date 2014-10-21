@@ -20,7 +20,7 @@
   [:#react-js] (set-attr "src" "static/react/react-0.9.0.min.js")
   [:#jquery-js] (set-attr "src" "static/jquery/jquery-1.11.0.min.js")
   [:#bootstrap-js] (set-attr "src" "static/bootstrap/bootstrap-3.1.1-dist/js/bootstrap.min.js")
-  ;;[:#js-files] (substitute (html [:script {:src "js/main.js" :type "text/javascript"}]))
+  [:#js-files] (substitute (html [:script {:src "js/main.js" :type "text/javascript"}]))
   )
 
 
@@ -71,8 +71,7 @@
 (defroutes handler
   (resources "/")
   (GET "/bookmark/ws" [] bookmark-handler)
-  (GET "/*" [] (static-page)
-       #_(if (= (:build @server-state) :prod)
+  (GET "/*" [] (if (= (:build @server-state) :prod)
                  (static-page)
                  (io/resource "public/index.html"))))
 
