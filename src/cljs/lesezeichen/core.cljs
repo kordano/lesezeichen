@@ -6,6 +6,7 @@
             [kioo.om :refer [content set-attr do-> substitute listen]]
             [kioo.core :refer [handle-wrapper]]
             [om.core :as om :include-macros true]
+            [clojure.string :refer [lower-case trim blank?]]
             [om.dom :as omdom]
             [lesezeichen.com :refer [connect!]])
   (:require-macros [kioo.om :refer [defsnippet deftemplate]]
@@ -56,6 +57,11 @@
         (go (>! ws-in {:topic :add-bookmark :data {:email "eve@topiq.es" :url url}}))
         (om/set-state! owner :url-input-text "")))))
 
+;; --- NAVBAR ---
+
+(deftemplate nav "templates/navbar.html"
+  [app owner]
+  {[:#brand] (content "Lesezeichen")})
 
 
 ;; --- MAIN VIEW ---
@@ -70,14 +76,18 @@
 (deftemplate bookmarks "templates/bookmarks.html"
   [app owner state]
   {[:#bm-header] (content "Recent bookmarks")
-   [:#url-input] (do-> (set-attr :value (:search-text state))
-                       (listen :on-change #(handle-text-change % owner :search-text)
-                               ;; :on-key-down #(if (= (.-keyCode %) 10) #_(send-bookmark state owner) (when (= (.-which %) 13) (when (.-ctrlKey %) (send-bookmark state owner))))
-                               ))
+   [:#url-input] (do-> (set-attr :value (:url-input-text state))
+                       (listen :on-change #(handle-text-change % owner :url-input-text)
+                               :on-key-down #(if (= (.-keyCode %) 10)
+                                               (send-bookmark state owner)
+                                               (when (= (.-which %) 13)
+                                                 (when (.-ctrlKey %)
+                                                   (send-bookmark state owner))))))
+   [:#search-input] (do-> (set-attr :value (:search-text state))
+                          (listen :on-change #(handle-text-change % owner :search-text)))
    [:#url-list] (content (map #(url %) (sort-by :ts > app)))
    [:#bookmark-btn] (listen :on-click (fn [e]
-                                        (println "Yes, my lord?")
-                                        #_(send-bookmark state owner)))})
+                                        (send-bookmark state owner)))})
 
 
 ;; --- INIT ---
@@ -110,17 +120,24 @@
               (recur package))))))
     om/IRenderState
     (render-state [this state]
-      (bookmarks (if (not (clojure.string/blank? (:search-text state)))
+      (bookmarks (if (blank? (:search-text state))
+                   (:bookmarks app)
                    (remove
                     (fn [bookmark]
                       (nil?
                        (re-find
-                        (re-pattern (clojure.string/lower-case (:search-text state)))
-                        (clojure.string/lower-case (:title bookmark)))))
-                    (:bookmarks app))
-                   (:bookmarks app))
+                        (-> state :search-text trim lower-case re-pattern)
+                        (-> bookmark :title lower-case))))
+                    (:bookmarks app)))
                  owner state))))
 
+
+;; --- VIEWS ROOT ---
+
+(om/root
+ #(om/component (nav %1 %2))
+ app-state
+ {:target (. js/document (getElementById "navbar-container"))})
 
 (om/root
  bookmark-view
