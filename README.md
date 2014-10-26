@@ -2,7 +2,7 @@
 
 A simple url collecting application using datomic as backend storage and Om as frontend framework.
 
-Visit live application [here](https://bookie.polyc0l0r.net/)
+Visit a live application [here](https://bookie.polyc0l0r.net/).
 
 ## Usage
 

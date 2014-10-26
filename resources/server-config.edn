@@ -1,9 +1,9 @@
 {:build :dev
  :behind-proxy false
  :proto "http"
- :schema "schema.edn"
+ :version 0.02
+ :date "2014-10-16"
  :port 8087
- :host "localhost" ;; adjust hostname
- :couchdb-url (str "http://" (or (System/getenv "DB_PORT_5984_TCP_ADDR") "localhost") ":5984")
- :trusted-hosts #{}
+ :schema "schema.edn"
+ :cold-start false
  }
