@@ -2,9 +2,22 @@
   (:require [datomic.api :as d]
             [clojure.java.io :as io]
             [clj-time.core :as t]
+            [postal.core :as postal]
             [aprint.core :refer [aprint]]
             [lesezeichen.io :refer [transact-all]]))
 
+
+(defn generate-token []
+  (let [chars (map char (concat (range 48 58) (range 65 91) (range 97 123)))]
+    (apply str (take 10 (repeatedly #(rand-nth chars))))))
+
+(defn send-registry [email token]
+  (postal/send-message
+   {:from "authentication@topiq.es"
+    :to [email]
+    :subject "Registry token"
+    :body (str "This is your token: " token)
+    :X-Tra "Something else"}))
 
 (def db-uri-base "datomic:free://0.0.0.0:4334")
 
@@ -17,7 +30,9 @@
     (d/connect uri)))
 
 
-(defn db-conn []
+(defn db-conn
+  ""
+  []
   (let [uri (str db-uri-base "/lesezeichen")]
     (d/create-database uri)
     (d/connect uri)))
@@ -28,10 +43,13 @@
 
 
 (defn add-user [conn {:keys [email]}]
-  (d/transact
-   conn
-   [{:db/id (d/tempid :db.part/user)
-     :user/email email}]))
+  (let [token (generate-token)]
+    (d/transact
+     conn
+     [{:db/id (d/tempid :db.part/user)
+       :user/token token
+       :user/email email}])
+    (send-registry email token)))
 
 
 (defn- get-user-id [conn email]
@@ -43,14 +61,6 @@
     (ffirst (d/q query db email))))
 
 
-(defn- get-tx-id [conn eid attr]
-  (let [query '[:find ?tx
-                :in $ ?e ?attr
-                :where [?e ?attr _ ?tx]]
-        db (d/db conn)]
-    (d/q query db eid attr)))
-
-
 (defn transact-bookmark [conn {:keys [url title email]}]
   (let [uid (get-user-id conn email)]
     (d/transact
@@ -60,7 +70,10 @@
        :bookmark/title title
        :bookmark/user uid}])))
 
-(defn get-bookmark [conn {:keys [url email]}]
+
+(defn get-bookmark
+  "Retrieve bookmark"
+  [conn {:keys [url email]}]
   (let [query '[:find ?url ?title ?tx
                :in $ ?url ?email
                :where
@@ -133,7 +146,7 @@
 
 (comment
 
-  (def conn (db-conn))
+  (def conn (scratch-conn))
 
   (init-schema conn "schema.edn")
 
@@ -160,6 +173,5 @@
          (map #(get-user-bookmarks conn %))
          (zipmap users)
          aprint))
-
 
   )
