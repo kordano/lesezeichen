@@ -4,12 +4,11 @@ FROM ubuntu:trusty
 RUN apt-get   update
 
 # Install and setup project dependencies
-RUN apt-get install -y curl git wget unzip
+RUN apt-get install -y curl git wget unzip sendmail
 
 # prepare for Java download
 RUN apt-get install -y software-properties-common
 RUN apt-get -y install openjdk-7-jre-headless
-RUN apt-get install -y mongodb-clients
 ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
 
 # fix wget
