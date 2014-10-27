@@ -42,6 +42,10 @@
   (case topic
     :get-user-bookmarks {:topic topic
                          :data (get-user-bookmarks (:conn @server-state) data)}
+    :register {:topic topic
+               :data (add-user (:conn @server-state) data)}
+    :sign-in {:topic topic
+              :data ()}
     :add-bookmark {:topic topic
                    :data (add-bookmark (:conn @server-state)
                                        (assoc data :title (fetch-url-title (:url data))))}
