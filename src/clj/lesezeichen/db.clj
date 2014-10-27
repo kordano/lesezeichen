@@ -49,8 +49,8 @@
      [{:db/id (d/tempid :db.part/user)
        :user/token token
        :user/email email}])
-    #_(send-registry email token)
-    token))
+    (send-registry email token)
+    :done))
 
 
 (defn- get-user-id [conn email]
@@ -165,7 +165,6 @@
   (def new-token (add-user conn {:email "eve@topiq.es"}))
 
   (verify-user conn {:email "eve@topiq.es" :token new-token})
-
 
   (add-user conn {:email "adam@topiq.es"})
 

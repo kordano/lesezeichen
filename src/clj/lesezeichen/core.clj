@@ -45,7 +45,7 @@
     :register {:topic topic
                :data (add-user (:conn @server-state) data)}
     :sign-in {:topic topic
-              :data ()}
+              :data (verify-user (:conn @server-state) data)}
     :add-bookmark {:topic topic
                    :data (add-bookmark (:conn @server-state)
                                        (assoc data :title (fetch-url-title (:url data))))}
@@ -113,7 +113,6 @@
   (def server (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
   (server)
-
 
   ;; on first startup initialize datomic schema
   (init-schema (:schema @server-state))
