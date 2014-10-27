@@ -49,7 +49,8 @@
      [{:db/id (d/tempid :db.part/user)
        :user/token token
        :user/email email}])
-    (send-registry email token)))
+    #_(send-registry email token)
+    token))
 
 
 (defn- get-user-id [conn email]
@@ -102,7 +103,7 @@
 (defn get-user-bookmarks
   "Find user's bookmarks"
   [conn email]
-  (let [query '[:find ?url ?title ?tx
+  (let [query '[ :find ?url ?title ?tx
                 :in $ ?email
                 :where
                 [?bm :bookmark/url ?url ?tx]
@@ -144,13 +145,27 @@
         (d/db conn))))
 
 
+(defn verify-user [conn {:keys [email token]}]
+  (let [query '[:find ?token
+                :in $ ?email
+                :where
+                [?u :user/email ?email]
+                [?u :user/token ?token]]
+        db (d/db conn)]
+    (= token
+       (ffirst (d/q query db email)))))
+
+
 (comment
 
   (def conn (scratch-conn))
 
   (init-schema conn "schema.edn")
 
-  (add-user conn {:email "eve@topiq.es"})
+  (def new-token (add-user conn {:email "eve@topiq.es"}))
+
+  (verify-user conn {:email "eve@topiq.es" :token new-token})
+
 
   (add-user conn {:email "adam@topiq.es"})
 
