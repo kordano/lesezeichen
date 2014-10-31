@@ -42,9 +42,9 @@
   (case topic
     :get-user-bookmarks {:topic topic
                          :data (get-user-bookmarks (:conn @server-state) data)}
-    :register {:topic topic
+    :sign-up  {:topic topic
                :data (add-user (:conn @server-state) data)}
-    :sign-in {:topic topic
+    :log-in {:topic topic
               :data (verify-user (:conn @server-state) data)}
     :add-bookmark {:topic topic
                    :data (add-bookmark (:conn @server-state)
@@ -66,6 +66,7 @@
                           (swap! server-state update-in [:out-chans] (fn [old new] (vec (remove #(= new %) old))) out-ch)
                           (close! out-ch)))
       (on-receive channel (fn [msg] (let [data (str (dispatch (read-string msg)))]
+                                     (println data)
                                      (send! channel data)
                                      (doall
                                       (map #(put! % data) (remove #{out-ch} (:out-chans @server-state))))))))))
@@ -86,7 +87,9 @@
 
 
 (defn init-db [state]
-  (swap! state #(assoc %1 :conn %2) (db-conn))
+  (let [conn (scratch-conn)]
+    (swap! state #(assoc %1 :conn %2) conn))
+  (init-schema (:conn @state) (:schema @state))
   state)
 
 
@@ -116,5 +119,8 @@
 
   ;; on first startup initialize datomic schema
   (init-schema (:schema @server-state))
+
+
+  (get-all-users (:conn @server-state))
 
 )
