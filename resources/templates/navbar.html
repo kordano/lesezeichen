@@ -15,6 +15,64 @@
        </a>
      </div>
 
+    <!-- user management -->
+    <div id="nav-btn-user" class="navbar-text navbar-right navbar-btn">
+      <div class="dropdown">
+        <a data-toggle="dropdown" class="dropdown-toggle" href="#" id="nav-user-btn">
+          <span class="glyphicon glyphicon-user"></span>
+          <span id="nav-current-user">Not logged in.</span>
+          <span class="caret"/>
+        </a>
+        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+          <li id="login-btn"><a href="#" data-toggle="modal" data-target="#login-modal">Log in</a></li>
+          <li id="login-btn"><a href="#" data-toggle="modal" data-target="#signup-modal">Sign up</a></li>
+          <li class="divider"></li>
+          <li id="about-btn"><a href="#" data-toggle="modal" data-target="#about-modal">About</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- sign up -->
+    <div class="modal fade" id="signup-modal" tabindex="-1" role="dialog" aria-labelledby="signup-label" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            <h4 class="modal-title" id="signup-modal-title">Sign up by Mail</h4>
+          </div>
+          <div class="modal-body">
+            <input class="form-control" type="email" id="sign-up-user-input" placeholder="E-Mail"></input>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="modal-signup-btn" class="btn btn-primary" data-dismiss="modal">Sign up!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- sign up end -->
+
+    <!-- login -->
+    <div class="modal fade" id="login-modal" tabindex="-1" role="dialog" aria-labelledby="login-label" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            <h4 class="modal-title" id="login-modal-title">Login</h4>
+          </div>
+          <div class="modal-body">
+            <input class="form-control" type="email" id="login-user-mail-input" placeholder="E-Mail"></input>
+            <input class="form-control" type="password" id="login-user-token-input" placeholder="Token"></input>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="modal-login-btn" class="btn btn-primary" data-dismiss="modal">Log in!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- login end -->
+
+
+
     <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
    </body>
