@@ -28,16 +28,13 @@
                  [com.facebook/react "0.11.2"]
                  [facts/speech-synthesis "1.0.0"]
                  [clj-time "0.8.0"]
-                 [aprint "0.1.1"]
-                 [weasel "0.4.2"]]
+                 [aprint "0.1.1"]]
 
   :source-paths ["src/cljs" "src/clj"]
 
   :min-lein-version "2.0.0"
 
   :main lesezeichen.core
-
-  :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
   :plugins [[lein-cljsbuild "1.0.3"]
             [lein-figwheel "0.1.4-SNAPSHOT"]]
