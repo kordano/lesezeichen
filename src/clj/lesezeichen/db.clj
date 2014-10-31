@@ -21,7 +21,7 @@
 
 (def db-uri-base "datomic:free://0.0.0.0:4334")
 
-(defn- scratch-conn
+(defn scratch-conn
   "Create a connection to an anonymous, in-memory database."
   []
   (let [uri (str "datomic:mem://" (d/squuid))]
@@ -49,8 +49,8 @@
      [{:db/id (d/tempid :db.part/user)
        :user/token token
        :user/email email}])
-    (send-registry email token)
-    :done))
+    #_(send-registry email token)
+    token))
 
 
 (defn- get-user-id [conn email]
@@ -75,7 +75,7 @@
 (defn get-bookmark
   "Retrieve bookmark"
   [conn {:keys [url email]}]
-  (let [query '[:find ?url ?title ?tx
+  (let [query '[:find ?url ?title ?tx ?email
                :in $ ?url ?email
                :where
                [?bm :bookmark/url ?url ?tx]
@@ -86,7 +86,7 @@
     (mapv
      (fn [bookmark]
        (update-in
-        (zipmap [:url :title :ts] bookmark)
+        (zipmap [:url :title :ts :email] bookmark)
         [:ts]
         #(:db/txInstant (d/entity (d/db conn) %))))
      (d/q query db url email))))
@@ -139,9 +139,11 @@
   [conn]
   (map
    first
-   (d/q '[:find ?email
+   (d/q '[:find ?email ?token
           :where
-          [?e :user/email ?email]]
+          [?e :user/email ?email]
+          [?e :user/token ?token]
+          ]
         (d/db conn))))
 
 
@@ -158,9 +160,10 @@
 
 (comment
 
-  (def conn (scratch-conn))
+  (def conn (db-conn))
 
   (init-schema conn "schema.edn")
+
 
   (def new-token (add-user conn {:email "eve@topiq.es"}))
 
@@ -187,5 +190,7 @@
          (map #(get-user-bookmarks conn %))
          (zipmap users)
          aprint))
+
+  (get-all-users conn)
 
   )
