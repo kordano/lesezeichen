@@ -8,7 +8,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/clojurescript "0.0-2342"]
+                 [org.clojure/clojurescript "0.0-2371"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [org.clojure/core.memoize "0.5.6"]
 
@@ -16,20 +16,20 @@
                  [ring "1.3.1"]
                  [com.cemerick/friend "0.2.1"]
                  [enlive "1.1.5"]
-                 [compojure "1.1.9"]
-                 [com.draines/postal "1.11.1"]
+                 [compojure "1.2.1"]
+                 [com.draines/postal "1.11.2"]
 
                  [com.datomic/datomic-free "0.9.4899"]
 
-                 [prismatic/dommy "0.1.3"]
+                 [prismatic/dommy "1.0.0"]
                  [om "0.7.3"]
                  [kioo "0.4.0"]
                  [figwheel "0.1.4-SNAPSHOT"]
                  [com.facebook/react "0.11.2"]
                  [facts/speech-synthesis "1.0.0"]
                  [clj-time "0.8.0"]
-                 [aprint "0.1.0"]
-                 [weasel "0.3.0"]]
+                 [aprint "0.1.1"]
+                 [weasel "0.4.2"]]
 
   :source-paths ["src/cljs" "src/clj"]
 
