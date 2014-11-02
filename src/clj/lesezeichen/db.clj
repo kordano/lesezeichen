@@ -11,13 +11,17 @@
   (let [chars (map char (concat (range 48 58) (range 65 91) (range 97 123)))]
     (apply str (take 10 (repeatedly #(rand-nth chars))))))
 
-(defn send-registry [email token]
+(defn send-registry [email auth-code]
   (postal/send-message
    {:from "authentication@topiq.es"
     :to [email]
     :subject "Registry token"
-    :body (str "This is your token: " token)
-    :X-Tra "Something else"}))
+    :body [:alternative
+           {:type "text/plain"
+            :content (str "In order to activate your account please visit http://localhost:8087/?auth=" auth-code " again .")}
+           {:type "text/html"
+            :content (str "<html>In order to activate your account please visit <a href=http://localhost:8087/?auth=" auth-code ">lesezeichen</a> again.</html>")}]}))
+
 
 (def db-uri-base "datomic:free://0.0.0.0:4334")
 
@@ -43,14 +47,13 @@
 
 
 (defn add-user [conn {:keys [email]}]
-  (let [token (generate-token)]
+  (let [auth-code (str (java.util.UUID/randomUUID))]
     (d/transact
      conn
      [{:db/id (d/tempid :db.part/user)
-       :user/token token
+       :user/auth-code auth-code
        :user/email email}])
-    #_(send-registry email token)
-    token))
+    (send-registry email auth-code)))
 
 
 (defn- get-user-id [conn email]
@@ -142,55 +145,26 @@
    (d/q '[:find ?email ?token
           :where
           [?e :user/email ?email]
-          [?e :user/token ?token]
+          [?e :user/auth-code ?token]
           ]
         (d/db conn))))
 
 
-(defn verify-user [conn {:keys [email token]}]
-  (let [query '[:find ?token
-                :in $ ?email
+(defn register-device [conn auth]
+  (let [query '[:find ?email
+                :in $ ?auth
                 :where
                 [?u :user/email ?email]
-                [?u :user/token ?token]]
+                [?u :user/auth-code ?auth]]
         db (d/db conn)]
-    (= token
-       (ffirst (d/q query db email)))))
+    (ffirst (d/q query db auth))))
 
 
 (comment
 
-  (def conn (db-conn))
+  (def conn (scratch-conn))
 
   (init-schema conn "schema.edn")
 
-
-  (def new-token (add-user conn {:email "eve@topiq.es"}))
-
-  (verify-user conn {:email "eve@topiq.es" :token new-token})
-
-  (add-user conn {:email "adam@topiq.es"})
-
-  (doall
-      [(add-bookmark conn {:url "https://topiq.es" :title "TOPIQ" :email "eve@topiq.es"})
-       (add-bookmark conn {:url "https://google.com" :title "the kraken" :email "eve@topiq.es"})
-       (add-bookmark conn {:url "https://sup.com" :title "the void 2" :email "adam@topiq.es"})
-       (add-bookmark conn {:url "http://boo.far" :title "foobar" :email "eve@topiq.es"})
-       (add-bookmark conn {:url "http://boo.far" :title "foobar" :email "adam@topiq.es"})])
-
-  ;; -------
-
-
-  ;; some queries
-  (-> (get-user-bookmarks conn "eve@topiq.es")
-      aprint)
-
-  (let [users (get-all-users conn)]
-    (->> users
-         (map #(get-user-bookmarks conn %))
-         (zipmap users)
-         aprint))
-
-  (get-all-users conn)
 
   )

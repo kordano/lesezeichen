@@ -6,6 +6,7 @@
             [compojure.route :refer [resources]]
             [compojure.core :refer [GET POST defroutes]]
             [compojure.handler :refer [site api]]
+            [aprint.core :refer [aprint]]
             [lesezeichen.db :refer :all]
             [org.httpkit.server :refer [with-channel on-close on-receive run-server send!]]
             [clojure.core.async :refer [chan >! <! go go-loop put! close!]]
@@ -26,14 +27,14 @@
 (defn fetch-url [url]
   (try
     (enlive/html-resource (java.net.URL. url))
-    (catch Exception e "FAILED")))
+    (catch Exception e :error)))
 
 
 (defn fetch-url-title
   "fetch url and extract title"
   [url]
   (let [res (fetch-url url)]
-    (if (= "FAILED" res)
+    (if (= :error res)
       url
       (-> res (enlive/select [:head :title]) first :content first))))
 
@@ -44,8 +45,6 @@
                          :data (get-user-bookmarks (:conn @server-state) data)}
     :sign-up  {:topic topic
                :data (add-user (:conn @server-state) data)}
-    :log-in {:topic topic
-              :data (verify-user (:conn @server-state) data)}
     :add-bookmark {:topic topic
                    :data (add-bookmark (:conn @server-state)
                                        (assoc data :title (fetch-url-title (:url data))))}
@@ -63,21 +62,27 @@
           (send! channel m)
           (recur (<! out-ch))))
       (on-close channel (fn [status]
-                          (swap! server-state update-in [:out-chans] (fn [old new] (vec (remove #(= new %) old))) out-ch)
+                          (swap! server-state update-in [:out-chans]
+                                 (fn [old new] (vec (remove #(= new %) old)))
+                                 out-ch)
                           (close! out-ch)))
       (on-receive channel (fn [msg] (let [data (str (dispatch (read-string msg)))]
-                                     (println data)
                                      (send! channel data)
                                      (doall
-                                      (map #(put! % data) (remove #{out-ch} (:out-chans @server-state))))))))))
+                                      (map
+                                       #(put! % data)
+                                       (remove #{out-ch} (:out-chans @server-state))))))))))
 
 
 (defroutes handler
   (resources "/")
   (GET "/bookmark/ws" [] bookmark-handler)
-  (GET "/*" [] (if (= (:build @server-state) :prod)
-                 (static-page)
-                 (io/resource "public/index.html"))))
+  (GET "/*" {{token :auth} :params} (go
+                                      (when token
+                                        (register-device (:conn @server-state) token))
+                                      (if (= (:build @server-state) :prod)
+                                        (static-page)
+                                        (io/resource "public/index.html")))))
 
 
 (defn read-config [state path]
@@ -119,7 +124,6 @@
 
   ;; on first startup initialize datomic schema
   (init-schema (:schema @server-state))
-
 
   (get-all-users (:conn @server-state))
 
