@@ -17,7 +17,7 @@
                  [com.cemerick/friend "0.2.1"]
                  [enlive "1.1.5"]
                  [compojure "1.2.1"]
-                 [com.draines/postal "1.11.2"]
+                 [com.draines/postal "1.11.1"]
 
                  [com.datomic/datomic-free "0.9.4899"]
 
