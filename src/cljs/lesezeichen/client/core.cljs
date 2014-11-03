@@ -1,4 +1,4 @@
-(ns lesezeichen.core
+(ns lesezeichen.client.core
   (:require [figwheel.client :as figw :include-macros true]
             [cljs.core.async :refer [put! chan <! >! alts! timeout close!] :as async]
             [cljs.reader :refer [read-string] :as read]
@@ -7,7 +7,7 @@
             [om.core :as om :include-macros true]
             [clojure.string :refer [lower-case trim blank?]]
             [om.dom :as omdom]
-            [lesezeichen.com :refer [connect!]])
+            [chord.client :refer [ws-ch]])
   (:require-macros [kioo.om :refer [defsnippet deftemplate]]
                    [cljs.core.async.macros :refer [go go-loop]]))
 
@@ -40,12 +40,12 @@
   "Send bookmark via websocket to server"
   [app owner]
   (let [url (om/get-state owner :url-input-text)
-        {[in _] :ws user :user} (-> app deref)]
+        {ws :ws user :user} (-> app deref)]
     (if (clojure.string/blank? url)
       (println "INFO: no input")
       (if user
         (do
-          (go (>! in {:topic :add-bookmark :data {:email user :url url}}))
+          (go (>! ws {:topic :add-bookmark :data {:email user :url url}}))
           (om/set-state! owner :url-input-text ""))
         (println "not registered yet!")))))
 
@@ -54,11 +54,11 @@
   "Send mail for sign up"
   [app owner]
   (let [email (om/get-state owner :signup-text)
-        [in _] (-> app deref :ws)]
+        ws (-> app deref :ws)]
     (if (clojure.string/blank? email)
       (println "INFO: no mail")
       (do
-        (go (>! in {:topic :sign-up :data {:email email}}))
+        (go (>! ws {:topic :sign-up :data {:email email}}))
         (om/transact! app :user (fn [old] email))
         (om/set-state! owner :signup-text "")))))
 
@@ -123,21 +123,25 @@
     om/IWillMount
     (will-mount [_]
       (go
-        (let [{:keys [in out] :as conn} (<! (connect!
-                        (str (if ssl? "wss://" "ws://")
-                             (.getDomain uri)
-                             (when (= (.getDomain uri) "localhost")
-                               (str ":" 8087 #_(.getPort uri)))
-                             "/bookmark/ws")))]
-          (om/transact! app :ws (fn [old] [in out]))
-          (>! in {:topic :get-user-bookmarks :data "konny@topiq.es"})
-          (loop [{:keys [topic data]} (<! out)]
+        (let [url (str (if ssl? "wss://" "ws://")
+                       (.getDomain uri)
+                       (when (= (.getDomain uri) "localhost")
+                         (str ":" 8087 #_(.getPort uri)))
+                       "/bookmark/ws")
+              {:keys [ws-channel error] :as ws-conn} (<! (ws-ch url))]
+          (om/transact! app :ws (fn [old new] ws-channel) ws-channel)
+          (if-not error
+            (do
+              (println (str "Connecting to: " url))
+              (>! ws-channel {:topic :get-user-bookmarks :data "konny@topiq.es"}))
+            (println (pr-str "Error:" error)))
+          (loop [{{:keys [topic data]} :message} (<! ws-channel)]
             (case topic
               :get-user-bookmarks (om/transact! app :bookmarks (fn [old] data))
               :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
               :unknown)
-            (if-let [package (<! out)]
-              (recur package))))))
+            (if-let [{{:keys [topic data] :as message} :message}(<! ws-channel)]
+              (recur message))))))
     om/IRenderState
     (render-state [this state]
       (nav app owner state))))

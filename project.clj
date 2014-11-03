@@ -17,14 +17,14 @@
                  [com.cemerick/friend "0.2.1"]
                  [enlive "1.1.5"]
                  [compojure "1.2.1"]
-                 [com.draines/postal "1.11.1"]
-                 [com.taoensso/timbre "3.3.1"]
+                 [com.draines/postal "1.11.1"] [com.taoensso/timbre "3.3.1"]
 
                  [com.datomic/datomic-free "0.9.4899"]
 
                  [prismatic/dommy "1.0.0"]
                  [om "0.7.3"]
                  [kioo "0.4.0"]
+                 [jarohen/chord "0.4.2"]
                  [figwheel "0.1.4-SNAPSHOT"]
                  [com.facebook/react "0.11.2"]
                  [facts/speech-synthesis "1.0.0"]
@@ -46,15 +46,25 @@
 
   :cljsbuild
   {:builds
-   [{:id "dev"
-     :source-paths ["src/cljs"]
-     :compiler {:output-to "resources/public/js/compiled/main.js"
-                :output-dir "resources/public/js/compiled/out"
+   {:main-dev
+    {:source-paths ["src/cljs/lesezeichen/client"]
+     :compiler {:output-to "resources/public/js/compiled/core/main.js"
+                :output-dir "resources/public/js/compiled/core/out"
                 :optimizations :none
                 :source-map true}}
-    {:id "prod"
-     :source-paths ["src/cljs"]
+    :main-prod
+    {:source-paths ["src/cljs/lesezeichen/client"]
      :compiler {:output-to "resources/public/js/main.js"
-                :optimizations :simple}}]}
+                :optimizations :simple}}
+    :auth-dev
+    {:source-paths ["src/cljs/lesezeichen/auth"]
+     :compiler {:output-to "resources/public/js/compiled/auth/auth.js"
+                :output-dir "resources/public/js/compiled/auth/out"
+                :optimizations :none
+                :source-map true}}
+    :auth-prod
+    {:source-paths ["src/cljs/lesezeichen/auth"]
+     :compiler {:output-to "resources/public/js/auth.js"
+                :optimizations :simple}}}}
 
   )
