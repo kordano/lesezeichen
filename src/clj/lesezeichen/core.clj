@@ -1,8 +1,9 @@
 (ns lesezeichen.core
   (:gen-class :main true)
   (:require [clojure.edn :as edn]
-            [net.cgrand.enlive-html :refer [deftemplate set-attr substitute html] :as enlive]
+            [net.cgrand.enlive-html :refer [content deftemplate defsnippet set-attr substitute html] :as enlive]
             [clojure.java.io :as io]
+            [taoensso.timbre :refer [debug]]
             [compojure.route :refer [resources]]
             [compojure.core :refer [GET POST defroutes]]
             [compojure.handler :refer [site api]]
@@ -13,6 +14,19 @@
             [ring.util.response :as resp]))
 
 (def server-state (atom {:out-chans []}))
+
+
+(defsnippet auth-jumbo "templates/auth.html" [:#register-message]
+  [email]
+  [:#user-name] (content email))
+
+
+(deftemplate auth-success-page
+  (io/resource "public/index.html")
+  [email token]
+  [:#center-container] (content (auth-jumbo email))
+  [:#js-files] (content ""))
+
 
 (deftemplate static-page
   (io/resource "public/index.html")
@@ -67,6 +81,7 @@
                                  out-ch)
                           (close! out-ch)))
       (on-receive channel (fn [msg] (let [data (str (dispatch (read-string msg)))]
+                                     (debug (str "Message received: " msg))
                                      (send! channel data)
                                      (doall
                                       (map
@@ -77,12 +92,12 @@
 (defroutes handler
   (resources "/")
   (GET "/bookmark/ws" [] bookmark-handler)
-  (GET "/*" {{token :auth} :params} (go
-                                      (when token
-                                        (register-device (:conn @server-state) token))
-                                      (if (= (:build @server-state) :prod)
-                                        (static-page)
-                                        (io/resource "public/index.html")))))
+  (GET "/*" {{token :auth email :email} :params}
+       (if (or token email)
+         (auth-success-page email)
+         (if (= (:build @server-state) :prod)
+           (static-page)
+           (io/resource "public/index.html")))))
 
 
 (defn read-config [state path]

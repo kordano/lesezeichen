@@ -18,6 +18,7 @@
                  [enlive "1.1.5"]
                  [compojure "1.2.1"]
                  [com.draines/postal "1.11.1"]
+                 [com.taoensso/timbre "3.3.1"]
 
                  [com.datomic/datomic-free "0.9.4899"]
 

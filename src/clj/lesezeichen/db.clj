@@ -2,6 +2,7 @@
   (:require [datomic.api :as d]
             [clojure.java.io :as io]
             [clj-time.core :as t]
+            [taoensso.timbre :refer [debug info warn error]]
             [postal.core :as postal]
             [aprint.core :refer [aprint]]
             [lesezeichen.io :refer [transact-all]]))
@@ -53,7 +54,8 @@
      [{:db/id (d/tempid :db.part/user)
        :user/auth-code auth-code
        :user/email email}])
-    (send-registry email auth-code)))
+    (debug (str "Send registry: " auth-code))
+    :done))
 
 
 (defn- get-user-id [conn email]
@@ -165,6 +167,5 @@
   (def conn (scratch-conn))
 
   (init-schema conn "schema.edn")
-
 
   )

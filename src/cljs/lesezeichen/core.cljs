@@ -23,7 +23,7 @@
                       :ws []}))
 
 ;; weasel websocket, development only
-(if (= "localhost" (.getDomain uri))
+#_(if (= "localhost" (.getDomain uri))
   (do
     (figw/watch-and-reload
      :jsload-callback (fn [] (print "reloaded")))))
