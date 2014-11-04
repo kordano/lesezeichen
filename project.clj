@@ -48,8 +48,8 @@
   {:builds
    {:main-dev
     {:source-paths ["src/cljs/lesezeichen/client"]
-     :compiler {:output-to "resources/public/js/compiled/core/main.js"
-                :output-dir "resources/public/js/compiled/core/out"
+     :compiler {:output-to "resources/public/js/compiled/client/main.js"
+                :output-dir "resources/public/js/compiled/client/out"
                 :optimizations :none
                 :source-map true}}
     :main-prod
@@ -58,7 +58,7 @@
                 :optimizations :simple}}
     :auth-dev
     {:source-paths ["src/cljs/lesezeichen/auth"]
-     :compiler {:output-to "resources/public/js/compiled/auth/auth.js"
+     :compiler {:output-to "resources/public/js/compiled/auth/main.js"
                 :output-dir "resources/public/js/compiled/auth/out"
                 :optimizations :none
                 :source-map true}}

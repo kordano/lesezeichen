@@ -25,7 +25,7 @@
   (io/resource "public/index.html")
   [email token]
   [:#center-container] (content (auth-jumbo email))
-  [:#js-files] (content ""))
+  [:#js-files] (substitute (html [:script {:src "js/auth.js" :type "text/javascript"}])))
 
 
 (deftemplate static-page
@@ -36,6 +36,15 @@
   [:#jquery-js] (set-attr "src" "static/jquery/jquery-1.11.0.min.js")
   [:#bootstrap-js] (set-attr "src" "static/bootstrap/bootstrap-3.1.1-dist/js/bootstrap.min.js")
   [:#js-files] (substitute (html [:script {:src "js/main.js" :type "text/javascript"}])))
+
+
+(deftemplate dev-page
+  (io/resource "public/index.html")
+  [build]
+  [:#goog-base-js] (set-attr :id (str "js/compiled/" (-> build symbol str) "/out/base.js"))
+  [:#main-js] (set-attr :id (str "js/compiled/" (-> build symbol str) "/main.js"))
+  [:#js-require] (substitute [:script {:type "text/javascript"}
+                              (str "goog.require(' lesezeichen." (-> build symbol str) ".core');")]))
 
 
 (defn fetch-url [url]
