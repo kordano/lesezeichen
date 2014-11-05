@@ -64,7 +64,6 @@
 
 
 ;; --- NAVBAR ---
-
 (deftemplate nav "templates/navbar.html"
   [app owner state]
   {[:#brand] (content "Lesezeichen")
