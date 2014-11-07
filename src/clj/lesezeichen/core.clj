@@ -23,7 +23,7 @@
 
 (deftemplate auth-success-page
   (io/resource "public/index.html")
-  [email token]
+  [email]
   [:#center-container] (content (auth-jumbo email))
   [:#js-files] (substitute (html [:script {:src "js/auth.js" :type "text/javascript"}])))
 
@@ -41,10 +41,10 @@
 (deftemplate dev-page
   (io/resource "public/index.html")
   [build]
-  [:#goog-base-js] (set-attr :id (str "js/compiled/" (-> build symbol str) "/out/base.js"))
-  [:#main-js] (set-attr :id (str "js/compiled/" (-> build symbol str) "/main.js"))
-  [:#js-require] (substitute [:script {:type "text/javascript"}
-                              (str "goog.require(' lesezeichen." (-> build symbol str) ".core');")]))
+  [:#goog-base-js] (set-attr :src (str "js/compiled/" (name build) "/out/goog/base.js"))
+  [:#main-js] (set-attr :src (str "js/compiled/" (name build) "/main.js"))
+  [:#js-require] (substitute (html [:script {:type "text/javascript"}
+                                 (str "goog.require('lesezeichen." (name build) ".core');")])))
 
 
 (defn fetch-url [url]
@@ -103,10 +103,10 @@
   (GET "/bookmark/ws" [] bookmark-handler)
   (GET "/*" {{token :auth email :email} :params}
        (if (or token email)
-         (auth-success-page email)
+         (dev-page :auth)
          (if (= (:build @server-state) :prod)
            (static-page)
-           (io/resource "public/index.html")))))
+           (dev-page :client)))))
 
 
 (defn read-config [state path]
@@ -150,5 +150,6 @@
   (init-schema (:schema @server-state))
 
   (get-all-users (:conn @server-state))
+
 
 )
