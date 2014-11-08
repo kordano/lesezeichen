@@ -2,15 +2,16 @@
   (:require [datomic.api :as d]
             [clojure.java.io :as io]
             [clj-time.core :as t]
+            [clj-time.coerce :as c]
             [taoensso.timbre :refer [debug info warn error]]
             [postal.core :as postal]
             [aprint.core :refer [aprint]]
             [lesezeichen.io :refer [transact-all]]))
 
 
-(defn generate-token []
+(defn generate-token [n]
   (let [chars (map char (concat (range 48 58) (range 65 91) (range 97 123)))]
-    (apply str (take 10 (repeatedly #(rand-nth chars))))))
+    (apply str (take n (repeatedly #(rand-nth chars))))))
 
 (defn send-registry [email auth-code]
   (postal/send-message
@@ -55,7 +56,7 @@
        :user/auth-code auth-code
        :user/email email}])
     (debug (str "Send registry: " auth-code))
-    :done))
+    :user-created))
 
 
 (defn- get-user-id [conn email]
@@ -105,6 +106,21 @@
     (get-bookmark conn bookmark)))
 
 
+(defn transact-token
+  "Transact user device token"
+  [conn uid]
+  (let [token (generate-token 20)
+        expired (c/to-date (t/plus (t/now) (t/days 30)))]
+    (do
+      (d/transact
+       conn
+       [{:db/id (d/tempid :db.part/user)
+         :token/text token
+         :token/user uid
+         :token/expired expired}])
+      token)))
+
+
 (defn get-user-bookmarks
   "Find user's bookmarks"
   [conn email]
@@ -142,24 +158,45 @@
 (defn get-all-users
   "Retrieve all users"
   [conn]
-  (map
-   first
-   (d/q '[:find ?email ?token
-          :where
-          [?e :user/email ?email]
-          [?e :user/auth-code ?token]
-          ]
-        (d/db conn))))
+  (d/q '[:find ?email ?token
+         :where
+         [?e :user/email ?email]
+         [?e :user/auth-code ?token]]
+       (d/db conn)))
 
 
-(defn register-device [conn auth]
-  (let [query '[:find ?email
-                :in $ ?auth
+(defn register-device [conn {:keys [email auth]}]
+  (let [query '[:find ?u
+                :in $ ?auth ?email
                 :where
                 [?u :user/email ?email]
                 [?u :user/auth-code ?auth]]
         db (d/db conn)]
-    (ffirst (d/q query db auth))))
+    (let [uid (ffirst (d/q query db auth email))]
+      (if uid
+        (transact-token conn uid)
+        (do
+          (debug "Wrong email/auth combination")
+          :registry-failed)))))
+
+
+(defn verify-token
+  "Verifies a token sent from a client"
+  [conn {:keys [email token]}]
+  (let [query '[:find ?t ?expired
+                :in $ ?email ?token
+                :where
+                [?t :token/text ?text]
+                [?t :token/user ?uid]
+                [?t :token/expired ?expired]
+                [?uid :user/email ?email]]
+        db (d/db conn)]
+    (let [[id expired] (first (d/q query db email token))]
+      (if id
+        (if (t/after? (t/now) (c/to-date-time expired))
+          :expired
+          :valid)
+        :invalid))))
 
 
 (comment
@@ -167,5 +204,12 @@
   (def conn (scratch-conn))
 
   (init-schema conn "schema.edn")
+
+  (def a (add-user conn {:email "konny@topiq.es"}))
+
+  (def token (register-device conn {:email "konny@topiq.es" :auth "f362cc7f-7b2d-448e-9a9e-1e2060f34b88"}))
+
+  (verify-token conn {:email "konny@topiq.es" :token token})
+
 
   )

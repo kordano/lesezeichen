@@ -19,8 +19,14 @@
 (def ssl? (= (.getScheme uri) "https"))
 
 (def app-state (atom {:bookmarks []
-                      :user nil
+                      :user {:email nil
+                             :token-status nil}
                       :ws []}))
+(def socket-url (str (if ssl? "wss://" "ws://")
+                     (.getDomain uri)
+                     (when (= (.getDomain uri) "localhost")
+                       (str ":" 8087 #_(.getPort uri)))
+                     "/bookmark/ws"))
 
 ;; weasel websocket, development only
 #_(if (= "localhost" (.getDomain uri))
@@ -36,16 +42,23 @@
   (om/set-state! owner text (.. e -target -value)))
 
 
+(defn get-local-store
+  "Retrieve data from local html storage"
+  [db]
+  {:email (.getItem db "email")
+   :token (.getItem db "token")})
+
+
 (defn send-bookmark
   "Send bookmark via websocket to server"
   [app owner]
   (let [url (om/get-state owner :url-input-text)
-        {ws :ws user :user} (-> app deref)]
+        {ws :ws {:keys [email token-status]} :user} (-> app deref)]
     (if (clojure.string/blank? url)
       (println "INFO: no input")
-      (if user
+      (if (= :valid token-status)
         (do
-          (go (>! ws {:topic :add-bookmark :data {:email user :url url}}))
+          (go (>! ws {:topic :add-bookmark :data {:email email :url url}}))
           (om/set-state! owner :url-input-text ""))
         (println "not registered yet!")))))
 
@@ -78,7 +91,6 @@
 
 
 ;; --- MAIN VIEW ---
-
 (defsnippet url "templates/bookmarks.html" [:.list-group-item]
   [{:keys [title url ts]}]
   {[:.url-text] (do-> (set-attr :href url)
@@ -121,26 +133,32 @@
       {:signup-text ""})
     om/IWillMount
     (will-mount [_]
-      (go
-        (let [url (str (if ssl? "wss://" "ws://")
-                       (.getDomain uri)
-                       (when (= (.getDomain uri) "localhost")
-                         (str ":" 8087 #_(.getPort uri)))
-                       "/bookmark/ws")
-              {:keys [ws-channel error] :as ws-conn} (<! (ws-ch url))]
-          (om/transact! app :ws (fn [old new] ws-channel) ws-channel)
-          (if-not error
-            (do
-              (println (str "Connecting to: " url))
-              (>! ws-channel {:topic :get-user-bookmarks :data "konny@topiq.es"}))
-            (println (pr-str "Error:" error)))
-          (loop [{{:keys [topic data]} :message} (<! ws-channel)]
-            (case topic
-              :get-user-bookmarks (om/transact! app :bookmarks (fn [old] data))
-              :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
-              :unknown)
-            (if-let [{{:keys [topic data] :as message} :message}(<! ws-channel)]
-              (recur message))))))
+      (let [local-store (get-local-store (.-localStorage js/window))]
+        (go
+          (let [{:keys [ws-channel error] :as ws-conn} (<! (ws-ch socket-url))]
+            (om/transact! app :ws (fn [old new] ws-channel) ws-channel)
+            (if-not error
+              (do
+                (if-not (or (:token local-store) (:email local-store))
+                  (println "Not registered yet!")
+                  (do
+                    (om/transact! app :user (fn [old new] (assoc-in old [:email] (:email local-store))))
+                    (>! ws-channel {:topic :verify-token :data local-store})))
+
+                (loop [{{:keys [topic data] :as message} :message error :error} (<! ws-channel)]
+                  (if-not error
+                    (do
+                      (case topic
+                        :get-user-bookmarks (om/transact! app :bookmarks (fn [old] data))
+                        :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
+                        :verify-token (do
+                                        (om/transact! app :user (fn [old new] (assoc-in old [:token-status] data)))
+                                        (>! ws-channel {:topic :get-user-bookmarks :data (-> app deref :user :email)}))
+                        (println (pr-str "Unknown Message received: " message)))
+                      (if-let [from-server (<! ws-channel)]
+                        (recur from-server)))
+                    (println (pr-str "Error: " error)))))
+              (println (pr-str "Error: " error)))))))
     om/IRenderState
     (render-state [this state]
       (nav app owner state))))
@@ -171,3 +189,5 @@
  bookmark-view
  app-state
  {:target (. js/document (getElementById "center-container"))})
+
+#_(.clear (.-localStorage js/window))

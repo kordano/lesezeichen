@@ -16,18 +16,6 @@
 (def server-state (atom {:out-chans []}))
 
 
-(defsnippet auth-jumbo "templates/auth.html" [:#register-message]
-  [email]
-  [:#user-name] (content email))
-
-
-(deftemplate auth-success-page
-  (io/resource "public/index.html")
-  [email]
-  [:#center-container] (content (auth-jumbo email))
-  [:#js-files] (substitute (html [:script {:src "js/auth.js" :type "text/javascript"}])))
-
-
 (deftemplate static-page
   (io/resource "public/index.html")
   []
@@ -64,13 +52,15 @@
 
 (defn dispatch [{:keys [topic data]}]
   (case topic
-    :get-user-bookmarks {:topic topic
-                         :data (get-user-bookmarks (:conn @server-state) data)}
+    :get-user-bookmarks {:topic topic :data (get-user-bookmarks (:conn @server-state) data)}
     :sign-up  {:topic topic
                :data (add-user (:conn @server-state) data)}
+    :register-device {:topic topic
+                      :data (register-device (:conn @server-state) data)}
     :add-bookmark {:topic topic
                    :data (add-bookmark (:conn @server-state)
                                        (assoc data :title (fetch-url-title (:url data))))}
+    :verify-token {:topic topic :data (verify-token (:conn @server-state) data)}
     {:topic :error :data :unknown-request}))
 
 
@@ -151,5 +141,6 @@
 
   (get-all-users (:conn @server-state))
 
+  (get-user-bookmarks (:conn @server-state) "eve@topiq.es")
 
 )
