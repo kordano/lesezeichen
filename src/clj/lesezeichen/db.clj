@@ -20,9 +20,9 @@
     :subject "Registry token"
     :body [:alternative
            {:type "text/plain"
-            :content (str "In order to activate your account please visit http://localhost:8087/?auth=" auth-code " again .")}
+            :content (str "In order to activate your account please visit http://localhost:8087/?email=" email "&auth=" auth-code " again .")}
            {:type "text/html"
-            :content (str "<html>In order to activate your account please visit <a href=http://localhost:8087/?auth=" auth-code ">lesezeichen</a> again.</html>")}]}))
+            :content (str "<html>In order to activate your account please visit <a href=http://localhost:8087/?email=" email "&auth=" auth-code ">lesezeichen</a> again.</html>")}]}))
 
 
 (def db-uri-base "datomic:free://0.0.0.0:4334")
@@ -55,6 +55,7 @@
      [{:db/id (d/tempid :db.part/user)
        :user/auth-code auth-code
        :user/email email}])
+    (send-registry email auth-code)
     (debug (str "Send registry: " auth-code))
     :user-created))
 
