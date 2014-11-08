@@ -92,9 +92,10 @@
 
 ;; --- MAIN VIEW ---
 (defsnippet url "templates/bookmarks.html" [:.list-group-item]
-  [{:keys [title url ts]}]
+  [{:keys [user title url ts]}]
   {[:.url-text] (do-> (set-attr :href url)
                       (content (if (= "" title) url title)))
+   [:.url-user] (content user)
    [:.url-ts] (content (.toLocaleString ts))})
 
 

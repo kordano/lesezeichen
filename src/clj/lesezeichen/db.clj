@@ -125,7 +125,7 @@
 (defn get-user-bookmarks
   "Find user's bookmarks"
   [conn email]
-  (let [query '[ :find ?url ?title ?tx
+  (let [query '[ :find ?email ?url ?title ?tx
                 :in $ ?email
                 :where
                 [?bm :bookmark/url ?url ?tx]
@@ -136,7 +136,7 @@
     (mapv
      (fn [bookmark]
        (update-in
-        (zipmap [:url :title :ts] bookmark)
+        (zipmap [:user :url :title :ts] bookmark)
         [:ts]
         #(:db/txInstant (d/entity (d/db conn) %))))
      (d/q query db email))))
