@@ -19,9 +19,9 @@
 (def ssl? (= (.getScheme uri) "https"))
 
 (def app-state (atom {:bookmarks []
-                      :user {:email nil
-                             :token-status nil}
+                      :user {:email nil :token-status nil}
                       :ws []}))
+
 (def socket-url (str (if ssl? "wss://" "ws://")
                      (.getDomain uri)
                      (when (= (.getDomain uri) "localhost")
@@ -90,7 +90,10 @@
                                                        (send-registry app owner))))))
    [:#modal-signup-btn] (listen :on-click (fn [e] (send-registry app owner)))
    [:#general-info] (content (om/get-state owner :info-text))
-   [:#clear-db-btn] (listen :on-click (fn [e] (.clear (.-localStorage js/window))))})
+   [:#clear-db-btn] (listen :on-click (fn [e] (do
+                                               (.clear (.-localStorage js/window))
+                                               (println "Info: Store cleared!"))))})
+
 
 
 ;; --- MAIN VIEW ---
@@ -112,8 +115,8 @@
                                                (when (= (.-which %) 13)
                                                  (when (.-ctrlKey %)
                                                    (send-bookmark app owner))))))
-   [:#search-input] (do-> (set-attr :value (:search-text state))
-                          (listen :on-change #(handle-text-change % owner :search-text)))
+   [:#search-input]  (do-> (set-attr :value (:search-text state))
+                           (listen :on-change #(handle-text-change % owner :search-text)))
    [:#url-list] (content (let [bms (if (blank? (:search-text state))
                                      (:bookmarks app)
                                      (remove
@@ -198,5 +201,3 @@
  bookmark-view
  app-state
  {:target (. js/document (getElementById "center-container"))})
-
-#_(.clear (.-localStorage js/window))
