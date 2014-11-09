@@ -55,7 +55,7 @@
      [{:db/id (d/tempid :db.part/user)
        :user/auth-code auth-code
        :user/email email}])
-    (send-registry email auth-code)
+    #_(send-registry email auth-code)
     (debug (str "Send registry: " auth-code))
     :user-created))
 

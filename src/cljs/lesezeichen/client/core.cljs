@@ -80,6 +80,7 @@
 (deftemplate nav "templates/navbar.html"
   [app owner state]
   {[:#brand] (content "Lesezeichen")
+   [:#nav-current-user] (content (-> app :user :email))
    [:#sign-up-input] (do-> (set-attr :value (:signup-text state))
                            (listen :on-change #(handle-text-change % owner :signup-text)
                                    :on-key-down #(if (= (.-keyCode %) 10)
@@ -87,7 +88,9 @@
                                                    (when (= (.-which %) 13)
                                                      (when (.-ctrlKey %)
                                                        (send-registry app owner))))))
-   [:#modal-signup-btn] (listen :on-click (fn [e] (send-registry app owner)))})
+   [:#modal-signup-btn] (listen :on-click (fn [e] (send-registry app owner)))
+   [:#general-info] (content (om/get-state owner :info-text))
+   [:#clear-db-btn] (listen :on-click (fn [e] (.clear (.-localStorage js/window))))})
 
 
 ;; --- MAIN VIEW ---
@@ -124,6 +127,7 @@
    [:#bookmark-btn] (listen :on-click (fn [e] (send-bookmark app owner)))})
 
 
+
 ;; --- VIEWS ---
 (defn nav-view
   "Navbar view handling sin-up and log-in menu"
@@ -131,7 +135,8 @@
   (reify
     om/IInitState
     (init-state [_]
-      {:signup-text ""})
+      {:signup-text ""
+       :info-text ""})
     om/IWillMount
     (will-mount [_]
       (let [local-store (get-local-store (.-localStorage js/window))]
@@ -154,7 +159,10 @@
                         :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
                         :verify-token (do
                                         (om/transact! app :user (fn [old new] (assoc-in old [:token-status] data)))
-                                        (>! ws-channel {:topic :get-user-bookmarks :data (-> app deref :user :email)}))
+                                        (case data
+                                          :valid (>! ws-channel {:topic :get-user-bookmarks :data (-> app deref :user :email)})
+                                          :invalid (om/set-state! owner :info-text "invalid token")
+                                          :expired (om/set-state! owner :info-text "token expired.")))
                         (println (pr-str "Unknown Message received: " message)))
                       (if-let [from-server (<! ws-channel)]
                         (recur from-server)))
