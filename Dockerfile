@@ -4,7 +4,7 @@ FROM ubuntu:trusty
 RUN apt-get   update
 
 # Install and setup project dependencies
-RUN apt-get install -y curl git wget unzip sendmail
+RUN apt-get install -y curl git wget unzip libgnumail-java
 
 # prepare for Java download
 RUN apt-get install -y software-properties-common
