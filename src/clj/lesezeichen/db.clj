@@ -13,6 +13,7 @@
   (let [chars (map char (concat (range 48 58) (range 65 91) (range 97 123)))]
     (apply str (take n (repeatedly #(rand-nth chars))))))
 
+
 (defn send-registry [email auth-code]
   (postal/send-message
    {:from "authentication@topiq.es"
@@ -26,6 +27,7 @@
 
 
 (def db-uri-base "datomic:free://0.0.0.0:4334")
+
 
 (defn scratch-conn
   "Create a connection to an anonymous, in-memory database."
@@ -56,7 +58,7 @@
        :user/auth-code auth-code
        :user/email email}])
     #_(send-registry email auth-code)
-    (debug (str "Send registry: " auth-code))
+    (debug (str "Send registry: " auth-code " to " email))
     :user-created))
 
 
@@ -111,7 +113,7 @@
   "Transact user device token"
   [conn uid]
   (let [token (generate-token 20)
-        expired (c/to-date (t/plus (t/now) (t/days 30)))]
+        expired (c/to-date (t/plus (t/now) (t/months 3)))]
     (do
       (d/transact
        conn
@@ -142,20 +144,6 @@
      (d/q query db email))))
 
 
-(defn get-all-bookmarks
-  "Retrieve all bookmarks"
-  [conn]
-  (map
-   #(zipmap [:url :title :user] %)
-   (d/q '[:find ?url ?title ?email
-          :where
-          [?bm :bookmark/url ?url]
-          [?bm :bookmark/title ?title]
-          [?bm :bookmark/user ?uid]
-          [?uid :user/email ?email]]
-        (d/db conn))))
-
-
 (defn get-all-users
   "Retrieve all users"
   [conn]
@@ -183,7 +171,7 @@
 
 (defn verify-token
   "Verifies a token sent from a client"
-  [conn {:keys [email token]}]
+  [conn email token]
   (let [query '[:find ?t ?expired
                 :in $ ?email ?token
                 :where
@@ -200,6 +188,25 @@
         :invalid))))
 
 
+(defn get-all-bookmarks
+  "Get all bookmarks"
+  [conn]
+  (let [query '[ :find ?email ?url ?title ?tx
+                :where
+                [?bm :bookmark/url ?url ?tx]
+                [?bm :bookmark/title ?title]
+                [?bm :bookmark/user ?uid]
+                [?uid :user/email ?email]]
+        db (d/db conn)]
+    (mapv
+     (fn [bookmark]
+       (update-in
+        (zipmap [:email :url :title :ts] bookmark)
+        [:ts]
+        #(:db/txInstant (d/entity (d/db conn) %))))
+     (d/q query db))))
+
+
 (comment
 
   (def conn (scratch-conn))
@@ -212,5 +219,4 @@
 
   (verify-token conn {:email "konny@topiq.es" :token token})
 
-
-  )
+)

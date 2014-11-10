@@ -13,7 +13,9 @@
             [clojure.core.async :refer [chan >! <! go go-loop put! close!]]
             [ring.util.response :as resp]))
 
-(def server-state (atom {:out-chans []}))
+
+(def server-state (atom {:out-chans []
+                         :authenticated-tokens {}}))
 
 
 (deftemplate static-page
@@ -50,42 +52,57 @@
       (-> res (enlive/select [:head :title]) first :content first))))
 
 
-(defn dispatch [{:keys [topic data]}]
-  (case topic
-    :get-user-bookmarks {:topic topic :data (get-user-bookmarks (:conn @server-state) data)}
-    :sign-up  {:topic topic
-               :data (add-user (:conn @server-state) data)}
-    :register-device {:topic topic
-                      :data (register-device (:conn @server-state) data)}
-    :add-bookmark {:topic topic
-                   :data (add-bookmark (:conn @server-state)
-                                       (assoc data :title (fetch-url-title (:url data))))}
-    :verify-token {:topic topic :data (verify-token (:conn @server-state) data)}
-    {:topic :error :data :unknown-request}))
+(defn authorized? [state {:keys [topic token]}]
+  (if (#{:sign-up :register-device :verify-token :error} topic)
+    true
+    (= :valid (-> state :authenticated-tokens token :status))))
+
+
+(defn handle-token [state channel {:keys [topic data token] :as msg}]
+  (let [token-status (verify-token (:conn @state) data token)]
+    (swap! state assoc-in [:authenticated-tokens token] {:user data :status token-status})
+    {:topic topic :data token-status}))
+
+
+(defn dispatch [state channel {:keys [topic data token] :as msg}]
+  (let [conn (:conn @state)]
+      (if (authorized? state topic token)
+        (case topic
+          :get-user-bookmarks {:topic topic :data (get-user-bookmarks conn msg)}
+          :get-all-bookmarks {:topic topic :data (get-all-bookmarks conn)}
+          :sign-up {:topic topic :data (add-user conn msg)}
+          :register-device {:topic topic :data (register-device conn msg)}
+          :add-bookmark {:topic topic :data (add-bookmark conn (assoc data :title (fetch-url-title (:url data))))}
+          :verify-token (handle-token state channel msg)
+          {:topic :error :data :unknown-request})
+        {:topic :error :data :not-authorized})))
 
 
 (defn bookmark-handler
   "Handle incoming requests"
   [request]
-  (let [out-ch (chan)]
-    (with-channel request channel
-      (swap! server-state update-in [:out-chans] conj out-ch)
-      (go-loop [m (<! out-ch)]
-        (when m
-          (send! channel m)
-          (recur (<! out-ch))))
-      (on-close channel (fn [status]
-                          (swap! server-state update-in [:out-chans]
-                                 (fn [old new] (vec (remove #(= new %) old)))
-                                 out-ch)
-                          (close! out-ch)))
-      (on-receive channel (fn [msg] (let [data (str (dispatch (read-string msg)))]
-                                     (debug (str "Message received: " msg))
-                                     (send! channel data)
-                                     (doall
-                                      (map
-                                       #(put! % data)
-                                       (remove #{out-ch} (:out-chans @server-state))))))))))
+  (with-channel request channel
+    (on-close channel
+              (fn [status]
+                (swap!
+                 server-state update-in [:authenticated-tokens]
+                 (fn [token-map ch] (dissoc token-map ch))
+                 channel)))
+    (on-receive channel
+                (fn [msg]
+                  (let [in-msg (read-string msg)
+                        {:keys [topic data] :as out-msg} (dispatch @server-state channel in-msg)]
+                    (debug (str "Message received: " msg))
+                    (send! channel out-msg)
+                    (debug (str "Message sent: " out-msg))
+                    (when (= :add-bookmark topic)
+                      (doall
+                       (map
+                        #(send! (:channel %) out-msg)
+                        (-> @server-state
+                            :authenticated-tokens
+                            (dissoc (:token msg))
+                            vals)))))))))
 
 
 (defroutes handler
@@ -140,7 +157,5 @@
   (init-schema (:schema @server-state))
 
   (get-all-users (:conn @server-state))
-
-  (get-user-bookmarks (:conn @server-state) "eve@topiq.es")
 
 )
