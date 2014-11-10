@@ -14,8 +14,7 @@
             [ring.util.response :as resp]))
 
 
-(def server-state (atom {:out-chans []
-                         :authenticated-tokens {}}))
+(def server-state (atom {:authenticated-tokens {}}))
 
 
 (deftemplate static-page
@@ -137,8 +136,8 @@
       init-db))
 
 
-(defn -main [& args]
-  (init server-state (first args))
+(defn -main [config-path & args]
+  (init server-state config-path)
   (when (:cold-start @server-state)
     (init-schema (:conn @server-state) (:schema @server-state))
     (add-user (:conn @server-state) {:email "eve@topiq.es"}))

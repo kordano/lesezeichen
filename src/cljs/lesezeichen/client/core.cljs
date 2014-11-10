@@ -2,7 +2,7 @@
   (:require [figwheel.client :as figw :include-macros true]
             [cljs.core.async :refer [put! chan <! >! alts! timeout close!] :as async]
             [cljs.reader :refer [read-string] :as read]
-            [kioo.om :refer [content set-attr do-> substitute listen]]
+            [kioo.om :refer [content set-attr do-> substitute listen remove-attr add-class remove-class]]
             [kioo.core :refer [handle-wrapper]]
             [om.core :as om :include-macros true]
             [clojure.string :refer [lower-case trim blank?]]
@@ -42,6 +42,13 @@
   (om/set-state! owner text (.. e -target -value)))
 
 
+(defn show-signup-dialog
+  "SHow and hide signup-dialog"
+  [app owner]
+  (let [signup-dialog-status (om/get-state owner :sign-up-dialog)]
+    (om/set-state! owner :sign-up-dialog (not signup-dialog-status))))
+
+
 (defn get-local-store
   "Retrieve data from local html storage"
   [db]
@@ -53,14 +60,14 @@
   "Send bookmark via websocket to server"
   [app owner]
   (let [url (om/get-state owner :url-input-text)
-        {ws :ws {:keys [email token-status]} :user} (-> app deref)]
+        {ws :ws {:keys [email token-status token]} :user} (-> app deref)]
     (if (clojure.string/blank? url)
       (println "INFO: no input")
       (if (= :valid token-status)
         (do
-          (go (>! ws {:topic :add-bookmark :data {:email email :url url}}))
+          (go (>! ws {:topic :add-bookmark :data {:email email :url url} :token token}))
           (om/set-state! owner :url-input-text ""))
-        (println "not registered yet!")))))
+        (show-signup-dialog app owner)))))
 
 
 (defn send-registry
@@ -76,11 +83,15 @@
         (om/set-state! owner :signup-text "")))))
 
 
+
 ;; --- NAVBAR ---
 (deftemplate nav "templates/navbar.html"
   [app owner state]
   {[:#brand] (content "Lesezeichen")
    [:#nav-current-user] (content (-> app :user :email))
+   [:#signup-modal] (if (om/get-state owner :sign-up-dialog)
+                      (add-class :in)
+                      (remove-class :in))
    [:#sign-up-input] (do-> (set-attr :value (:signup-text state))
                            (listen :on-change #(handle-text-change % owner :signup-text)
                                    :on-key-down #(if (= (.-keyCode %) 10)
@@ -90,18 +101,17 @@
                                                        (send-registry app owner))))))
    [:#modal-signup-btn] (listen :on-click (fn [e] (send-registry app owner)))
    [:#general-info] (content (om/get-state owner :info-text))
-   [:#clear-db-btn] (listen :on-click (fn [e] (do
-                                               (.clear (.-localStorage js/window))
-                                               (println "Info: Store cleared!"))))})
+   [:#clear-db-btn] (listen :on-click (fn [e] (do (.clear (.-localStorage js/window))
+                                                 (println "Info: Store cleared!"))))})
 
 
 
 ;; --- MAIN VIEW ---
 (defsnippet url "templates/bookmarks.html" [:.list-group-item]
-  [{:keys [user title url ts]}]
+  [{:keys [email title url ts]}]
   {[:.url-text] (do-> (set-attr :href url)
                       (content (if (= "" title) url title)))
-   [:.url-user] (content user)
+   [:.url-user] (content email)
    [:.url-ts] (content (.toLocaleString ts))})
 
 
@@ -116,6 +126,8 @@
                                                  (when (.-ctrlKey %)
                                                    (send-bookmark app owner))))))
    [:#search-input]  (do-> (set-attr :value (:search-text state))
+                           (when (:valid (-> app :user :token-status))
+                             (remove-attr :disabled))
                            (listen :on-change #(handle-text-change % owner :search-text)))
    [:#url-list] (content (let [bms (if (blank? (:search-text state))
                                      (:bookmarks app)
@@ -130,7 +142,6 @@
    [:#bookmark-btn] (listen :on-click (fn [e] (send-bookmark app owner)))})
 
 
-
 ;; --- VIEWS ---
 (defn nav-view
   "Navbar view handling sin-up and log-in menu"
@@ -139,6 +150,7 @@
     om/IInitState
     (init-state [_]
       {:signup-text ""
+       :sign-up-dialog false
        :info-text ""})
     om/IWillMount
     (will-mount [_]
@@ -148,24 +160,27 @@
             (om/transact! app :ws (fn [old new] ws-channel) ws-channel)
             (if-not error
               (do
+                ;; verify token
                 (if-not (or (:token local-store) (:email local-store))
                   (println "Not registered yet!")
                   (do
                     (om/transact! app :user (fn [old new] (assoc-in old [:email] (:email local-store))))
-                    (>! ws-channel {:topic :verify-token :data local-store})))
-
+                    (om/transact! app :user (fn [old new] (assoc-in old [:token] (:token local-store))))
+                    (>! ws-channel {:topic :verify-token :data (:email local-store) :token (:token local-store)})))
+                ;; listen to incoming messages
                 (loop [{{:keys [topic data] :as message} :message error :error} (<! ws-channel)]
                   (if-not error
                     (do
                       (case topic
                         :get-user-bookmarks (om/transact! app :bookmarks (fn [old] data))
+                        :get-all-bookmarks (om/transact! app :bookmarks (fn [old] data))
                         :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
                         :verify-token (do
                                         (om/transact! app :user (fn [old new] (assoc-in old [:token-status] data)))
                                         (case data
-                                          :valid (>! ws-channel {:topic :get-user-bookmarks :data (-> app deref :user :email)})
+                                          :valid (>! ws-channel {:topic :get-all-bookmarks :data nil :token (:token local-store)})
                                           :invalid (om/set-state! owner :info-text "invalid token")
-                                          :expired (om/set-state! owner :info-text "token expired.")))
+                                          :expired (om/set-state! owner :info-text "token expired")))
                         (println (pr-str "Unknown Message received: " message)))
                       (if-let [from-server (<! ws-channel)]
                         (recur from-server)))
@@ -182,12 +197,9 @@
   [app owner]
   (reify
     om/IInitState
-    (init-state [_]
-      {:url-input-text ""
-       :search-text ""})
+    (init-state [_] {:url-input-text "" :search-text ""})
     om/IRenderState
-    (render-state [this state]
-      (bookmarks app owner state))))
+    (render-state [this state] (bookmarks app owner state))))
 
 
 ;; --- ROOT ---
