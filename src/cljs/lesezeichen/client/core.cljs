@@ -126,8 +126,7 @@
                                                  (when (.-ctrlKey %)
                                                    (send-bookmark app owner))))))
    [:#search-input]  (do-> (set-attr :value (:search-text state))
-                           (when (:valid (-> app :user :token-status))
-                             (remove-attr :disabled))
+                           #_(when (:valid (-> app :user :token-status)) (remove-attr :disabled))
                            (listen :on-change #(handle-text-change % owner :search-text)))
    [:#url-list] (content (let [bms (if (blank? (:search-text state))
                                      (:bookmarks app)
@@ -171,9 +170,14 @@
                 (loop [{{:keys [topic data] :as message} :message error :error} (<! ws-channel)]
                   (if-not error
                     (do
+                      (println "Incoming Message: " (pr-str message))
                       (case topic
                         :get-user-bookmarks (om/transact! app :bookmarks (fn [old] data))
                         :get-all-bookmarks (om/transact! app :bookmarks (fn [old] data))
+                        :sign-up (go
+                                   (om/set-state! owner :info-text "User created, email sent!")
+                                   (<! (timeout 5000))
+                                   (om/set-state! owner :info-text ""))
                         :add-bookmark (om/transact! app :bookmarks (fn [old] (into data old)))
                         :verify-token (do
                                         (om/transact! app :user (fn [old new] (assoc-in old [:token-status] data)))
@@ -181,11 +185,11 @@
                                           :valid (>! ws-channel {:topic :get-all-bookmarks :data nil :token (:token local-store)})
                                           :invalid (om/set-state! owner :info-text "invalid token")
                                           :expired (om/set-state! owner :info-text "token expired")))
-                        (println (pr-str "Unknown Message received: " message)))
+                        (println "Unknown topic"))
                       (if-let [from-server (<! ws-channel)]
                         (recur from-server)))
-                    (println (pr-str "Error: " error)))))
-              (println (pr-str "Error: " error)))))))
+                    (println "Error:" (pr-str error)))))
+              (println "Error:" (pr-str error)))))))
     om/IRenderState
     (render-state [this state]
       (nav app owner state))))

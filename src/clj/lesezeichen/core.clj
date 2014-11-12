@@ -54,7 +54,7 @@
 (defn authorized? [state {:keys [topic token]}]
   (if (#{:sign-up :register-device :verify-token :error} topic)
     true
-    (= :valid (-> state :authenticated-tokens token :status))))
+    (= :valid (-> @state :authenticated-tokens (get token) :status))))
 
 
 (defn handle-token [state channel {:keys [topic data token] :as msg}]
@@ -65,12 +65,12 @@
 
 (defn dispatch [state channel {:keys [topic data token] :as msg}]
   (let [conn (:conn @state)]
-      (if (authorized? state topic token)
+      (if (authorized? state msg)
         (case topic
-          :get-user-bookmarks {:topic topic :data (get-user-bookmarks conn msg)}
+          :get-user-bookmarks {:topic topic :data (get-user-bookmarks conn data)}
           :get-all-bookmarks {:topic topic :data (get-all-bookmarks conn)}
-          :sign-up {:topic topic :data (add-user conn msg)}
-          :register-device {:topic topic :data (register-device conn msg)}
+          :sign-up {:topic topic :data (add-user conn data)}
+          :register-device {:topic topic :data (register-device conn data)}
           :add-bookmark {:topic topic :data (add-bookmark conn (assoc data :title (fetch-url-title (:url data))))}
           :verify-token (handle-token state channel msg)
           {:topic :error :data :unknown-request})
@@ -90,11 +90,12 @@
     (on-receive channel
                 (fn [msg]
                   (let [in-msg (read-string msg)
-                        {:keys [topic data] :as out-msg} (dispatch @server-state channel in-msg)]
+                        {:keys [topic data token] :as out-msg} (str (dispatch server-state channel in-msg))
+                        ]
                     (debug (str "Message received: " msg))
                     (send! channel out-msg)
                     (debug (str "Message sent: " out-msg))
-                    (when (= :add-bookmark topic)
+                    #_(when (= :add-bookmark topic)
                       (doall
                        (map
                         #(send! (:channel %) out-msg)
