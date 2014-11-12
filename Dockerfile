@@ -1,7 +1,7 @@
 FROM ubuntu:trusty
 
 # Update the APT cache
-RUN apt-get   update
+RUN apt-get  update
 
 # Install and setup project dependencies
 RUN apt-get install -y curl git wget unzip libgnumail-java
