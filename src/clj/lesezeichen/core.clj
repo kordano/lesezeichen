@@ -95,7 +95,7 @@
                     (debug (str "Message received: " msg))
                     (send! channel out-msg)
                     (debug (str "Message sent: " out-msg))
-                    #_(when (= :add-bookmark topic)
+                    (when (= :add-bookmark topic)
                       (doall
                        (map
                         #(send! (:channel %) out-msg)
