@@ -59,7 +59,7 @@
 
 (defn handle-token [state channel {:keys [topic data token] :as msg}]
   (let [token-status (verify-token (:conn @state) data token)]
-    (swap! state assoc-in [:authenticated-tokens token] {:user data :status token-status})
+    (swap! state assoc-in [:authenticated-tokens token] {:user data :status token-status :channel channel})
     {:topic topic :data token-status}))
 
 
@@ -90,8 +90,7 @@
     (on-receive channel
                 (fn [msg]
                   (let [in-msg (read-string msg)
-                        {:keys [topic data token] :as out-msg} (str (dispatch server-state channel in-msg))
-                        ]
+                        {:keys [topic data token] :as out-msg} (str (dispatch server-state channel in-msg))]
                     (debug (str "Message received: " msg))
                     (send! channel out-msg)
                     (debug (str "Message sent: " out-msg))
@@ -99,10 +98,7 @@
                       (doall
                        (map
                         #(send! (:channel %) out-msg)
-                        (-> @server-state
-                            :authenticated-tokens
-                            (dissoc (:token msg))
-                            vals)))))))))
+                        (-> @server-state :authenticated-tokens (dissoc (:token msg)) vals)))))))))
 
 
 (defroutes handler
