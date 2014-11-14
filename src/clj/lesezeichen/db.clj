@@ -57,7 +57,7 @@
      [{:db/id (d/tempid :db.part/user)
        :user/auth-code auth-code
        :user/email email}])
-    #_(send-registry email auth-code)
+    (send-registry email auth-code)
     (debug (str "Send registry: " auth-code " to " email))
     :user-created))
 
@@ -209,11 +209,9 @@
 
 (comment
 
-  (def conn (scratch-conn))
+  (def conn (db-conn))
 
   (init-schema conn "schema.edn")
-
-  (def a (add-user conn {:email "konny@topiq.es"}))
 
   (def token (register-device conn {:email "konny@topiq.es" :auth "f362cc7f-7b2d-448e-9a9e-1e2060f34b88"}))
 

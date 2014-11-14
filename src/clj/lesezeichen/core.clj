@@ -90,15 +90,15 @@
     (on-receive channel
                 (fn [msg]
                   (let [in-msg (read-string msg)
-                        {:keys [topic data token] :as out-msg} (str (dispatch server-state channel in-msg))]
+                        {:keys [topic data token] :as out-msg} (dispatch server-state channel in-msg)]
                     (debug (str "Message received: " msg))
-                    (send! channel out-msg)
+                    (send! channel (str out-msg))
                     (debug (str "Message sent: " out-msg))
                     (when (= :add-bookmark topic)
                       (doall
                        (map
-                        #(send! (:channel %) out-msg)
-                        (-> @server-state :authenticated-tokens (dissoc (:token msg)) vals)))))))))
+                        #(send! (:channel %) (str out-msg))
+                        (-> @server-state :authenticated-tokens (dissoc (:token in-msg)) vals)))))))))
 
 
 (defroutes handler
@@ -119,7 +119,7 @@
 
 
 (defn init-db [state]
-  (let [conn (scratch-conn)]
+  (let [conn (db-conn)]
     (swap! state #(assoc %1 :conn %2) conn))
   (init-schema (:conn @state) (:schema @state))
   state)
@@ -135,9 +135,6 @@
 
 (defn -main [config-path & args]
   (init server-state config-path)
-  (when (:cold-start @server-state)
-    (init-schema (:conn @server-state) (:schema @server-state))
-    (add-user (:conn @server-state) {:email "eve@topiq.es"}))
   (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
 
@@ -148,10 +145,5 @@
   (def server (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
   (server)
-
-  ;; on first startup initialize datomic schema
-  (init-schema (:schema @server-state))
-
-  (get-all-users (:conn @server-state))
 
 )
