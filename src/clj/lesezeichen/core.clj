@@ -91,9 +91,7 @@
                 (fn [msg]
                   (let [in-msg (read-string msg)
                         {:keys [topic data token] :as out-msg} (dispatch server-state channel in-msg)]
-                    (debug (str "Message received: " msg))
                     (send! channel (str out-msg))
-                    (debug (str "Message sent: " out-msg))
                     (when (= :add-bookmark topic)
                       (doall
                        (map

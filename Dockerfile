@@ -4,13 +4,14 @@ FROM ubuntu:trusty
 RUN apt-get  update
 
 # Install and setup project dependencies
-RUN apt-get install -y curl git wget unzip libgnumail-java
+RUN apt-get install -y curl git wget unzip
 
 # prepare for Java download
 RUN apt-get install -y software-properties-common
 RUN apt-get -y install openjdk-7-jre-headless
 ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
 
+RUN apt-get install -y libgnumail-java sendmail
 # fix wget
 RUN export HTTP_CLIENT="wget --no-check-certificate -O"
 

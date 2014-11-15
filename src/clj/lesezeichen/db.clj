@@ -57,8 +57,8 @@
      [{:db/id (d/tempid :db.part/user)
        :user/auth-code auth-code
        :user/email email}])
-    (send-registry email auth-code)
-    (debug (str "Send registry: " auth-code " to " email))
+    (debug (pr-str (send-registry email auth-code)))
+    (debug auth-code)
     :user-created))
 
 
@@ -216,5 +216,8 @@
   (def token (register-device conn {:email "konny@topiq.es" :auth "f362cc7f-7b2d-448e-9a9e-1e2060f34b88"}))
 
   (verify-token conn {:email "konny@topiq.es" :token token})
+
+
+  (send-registry "kordano@hushmail.com" "1234")
 
 )
