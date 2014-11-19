@@ -54,7 +54,7 @@
                 :source-map true}}
     :client-prod
     {:source-paths ["src/cljs/lesezeichen/client"]
-     :compiler {:output-to "resources/public/js/main.js"
+     :compiler {:output-to "resources/public/js/client.js"
                 :optimizations :simple}}
     :auth-dev
     {:source-paths ["src/cljs/lesezeichen/auth"]

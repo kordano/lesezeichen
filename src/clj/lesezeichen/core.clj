@@ -19,12 +19,12 @@
 
 (deftemplate static-page
   (io/resource "public/index.html")
-  []
+  [build]
   [:#bootstrap-css] (set-attr "href" "static/bootstrap/readable/bootstrap.min.css")
   [:#react-js] (set-attr "src" "static/react/react-0.9.0.min.js")
   [:#jquery-js] (set-attr "src" "static/jquery/jquery-1.11.0.min.js")
   [:#bootstrap-js] (set-attr "src" "static/bootstrap/bootstrap-3.1.1-dist/js/bootstrap.min.js")
-  [:#js-files] (substitute (html [:script {:src "js/main.js" :type "text/javascript"}])))
+  [:#js-files] (substitute (html [:script {:src (str "js/" (name build) ".js") :type "text/javascript"}])))
 
 
 (deftemplate dev-page
@@ -51,7 +51,9 @@
       (-> res (enlive/select [:head :title]) first :content first))))
 
 
-(defn authorized? [state {:keys [topic token]}]
+(defn authorized?
+  "Check authorization status of given token"
+  [state {:keys [topic token]}]
   (if (#{:sign-up :register-device :verify-token :error} topic)
     true
     (= :valid (-> @state :authenticated-tokens (get token) :status))))
@@ -99,11 +101,12 @@
                         (-> @server-state :authenticated-tokens (dissoc (:token in-msg)) vals)))))))))
 
 
+;; TODO convert to component
 (defroutes handler
   (resources "/")
   (GET "/bookmark/ws" [] bookmark-handler)
-  (GET "/*" {{token :auth email :email} :params}
-       (if (or token email)
+  (GET "/*" {{auth-code :auth email :email} :params}
+       (if (or auth-code email)
          (dev-page :auth)
          (if (= (:build @server-state) :prod)
            (static-page)
@@ -143,5 +146,8 @@
   (def server (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
   (server)
+
+  (get-all-bookmarks (:conn @server-state))
+
 
 )
