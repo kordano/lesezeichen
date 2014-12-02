@@ -16,6 +16,7 @@
 
 (defn send-registry [email auth-code]
   (postal/send-message
+   {:host "192.168.1.165"}
    {:from "authentication@topiq.es"
     :to [email]
     :subject "Registry token"
