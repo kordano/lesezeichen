@@ -1,2 +1,2 @@
 #!/bin/bash
-cd /opt/lesezeichen; lein cljsbuild clean;lein cljsbuild once client-prod auth-prod
+cd /opt/lesezeichen; lein cljsbuild clean;lein cljsbuild once client-dev auth-dev
