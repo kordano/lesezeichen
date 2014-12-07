@@ -14,9 +14,8 @@
     (apply str (take n (repeatedly #(rand-nth chars))))))
 
 
-(defn send-registry [email auth-code host]
+(defn send-registry [email auth-code]
   (postal/send-message
-   {:host host}
    {:from "authentication@topiq.es"
     :to [email]
     :subject "Registry token"
