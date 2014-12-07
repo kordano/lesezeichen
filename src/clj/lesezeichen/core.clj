@@ -71,7 +71,7 @@
         (case topic
           :get-user-bookmarks {:topic topic :data (get-user-bookmarks conn data)}
           :get-all-bookmarks {:topic topic :data (get-all-bookmarks conn)}
-          :sign-up {:topic topic :data (add-user conn (assoc data :host (:mail-host state)))}
+          :sign-up {:topic topic :data (add-user conn (assoc data :host (:mail-host @state)))}
           :register-device {:topic topic :data (register-device conn data)}
           :add-bookmark {:topic topic :data (add-bookmark conn (assoc data :title (fetch-url-title (:url data))))}
           :verify-token (handle-token state channel msg)
@@ -106,10 +106,12 @@
   (resources "/")
   (GET "/bookmark/ws" [] bookmark-handler)
   (GET "/*" {{auth-code :auth email :email} :params}
-       (if (or auth-code email)
-         (dev-page :auth)
-         (if (= (:build @server-state) :prod)
-           (static-page)
+       (if (= (:build @server-state) :prod)
+         (if (or auth-code email)
+           (static-page :auth)
+           (static-page :client))
+         (if (or auth-code email)
+           (dev-page :auth)
            (dev-page :client)))))
 
 
