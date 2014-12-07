@@ -14,8 +14,9 @@
     (apply str (take n (repeatedly #(rand-nth chars))))))
 
 
-(defn send-registry [email auth-code]
+(defn send-registry [email auth-code host]
   (postal/send-message
+   {:host host}
    {:from "authentication@topiq.es"
     :to [email]
     :subject "Registry token"
@@ -216,8 +217,5 @@
   (def token (register-device conn {:email "konny@topiq.es" :auth "f362cc7f-7b2d-448e-9a9e-1e2060f34b88"}))
 
   (verify-token conn {:email "konny@topiq.es" :token token})
-
-
-  (send-registry "kordano@hushmail.com" "1234")
 
 )
