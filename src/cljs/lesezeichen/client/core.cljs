@@ -102,6 +102,7 @@
    [:#modal-signup-btn] (listen :on-click (fn [e] (send-registry app owner)))
    [:#general-info] (content (om/get-state owner :info-text))
    [:#clear-db-btn] (listen :on-click (fn [e] (do (.clear (.-localStorage js/window))
+                                                 (om/transact! app :user (fn [old] (assoc old :email "")))
                                                  (println "Info: Store cleared!"))))})
 
 
@@ -111,7 +112,7 @@
   [{:keys [email title url ts]}]
   {[:.url-text] (do-> (set-attr :href url)
                       (content (if (= "" title) url title)))
-   [:.url-user] (content email)
+   ;;[:.url-user] (content email)
    [:.url-ts] (content (.toLocaleString ts))})
 
 
