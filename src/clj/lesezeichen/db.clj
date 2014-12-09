@@ -9,11 +9,6 @@
             [lesezeichen.io :refer [transact-all]]))
 
 
-(defn generate-token [n]
-  (let [chars (map char (concat (range 48 58) (range 65 91) (range 97 123)))]
-    (apply str (take n (repeatedly #(rand-nth chars))))))
-
-
 (defn send-registry [email auth-code host port host-name]
   (postal/send-message
    {:host host
@@ -114,7 +109,7 @@
 (defn transact-token
   "Transact user device token"
   [conn uid]
-  (let [token (generate-token 20)
+  (let [token (str (java.util.UUID/randomUUID))
         expired (c/to-date (t/plus (t/now) (t/months 3)))]
     (do
       (d/transact
