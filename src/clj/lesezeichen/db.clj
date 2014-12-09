@@ -14,9 +14,10 @@
     (apply str (take n (repeatedly #(rand-nth chars))))))
 
 
-(defn send-registry [email auth-code host]
+(defn send-registry [email auth-code host port]
   (postal/send-message
-   {:host host}
+   {:host host
+    :port port}
    {:from "authentication@topiq.es"
     :to [email]
     :subject "Registry token"
@@ -51,14 +52,14 @@
   (transact-all conn (io/resource path)))
 
 
-(defn add-user [conn {:keys [email host]}]
+(defn add-user [conn {:keys [email host port]}]
   (let [auth-code (str (java.util.UUID/randomUUID))]
     (d/transact
      conn
      [{:db/id (d/tempid :db.part/user)
        :user/auth-code auth-code
        :user/email email}])
-    (debug (pr-str (send-registry email auth-code host)))
+    (debug (pr-str (send-registry email auth-code host port)))
     (debug auth-code)
     :user-created))
 
