@@ -9,12 +9,11 @@ Visit a live application [here](https://bookie.polyc0l0r.net/).
 For quick intro compile clojurescript
 
 ```
-lein cljsbuild once dev
+lein cljsbuild once dev-auth dev-client
 ```
-
-and run it with
+Fill in relevant data in 'opt/server-config.edn' and run it with
 ```
-lein run resources/server-config.edn
+lein run opt/server-config.edn
 ```
 
 Then visit <http://localhost:8087/>

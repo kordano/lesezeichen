@@ -52,20 +52,24 @@
 
 
 (defn authorized?
-  "Check authorization status of given token"
+  "Check authorization status of given topic and token"
   [state {:keys [topic token]}]
   (if (#{:sign-up :register-device :verify-token :error} topic)
     true
     (= :valid (-> @state :authenticated-tokens (get token) :status))))
 
 
-(defn handle-token [state channel {:keys [topic data token] :as msg}]
+(defn handle-token
+  "Handle currently connected browsers"
+  [state channel {:keys [topic data token] :as msg}]
   (let [token-status (verify-token (:conn @state) data token)]
     (swap! state assoc-in [:authenticated-tokens token] {:user data :status token-status :channel channel})
     {:topic topic :data token-status}))
 
 
-(defn dispatch [state channel {:keys [topic data token] :as msg}]
+(defn dispatch
+  "Handle incoming requests via sockets"
+  [state channel {:keys [topic data token] :as msg}]
   (let [conn (:conn @state)]
       (if (authorized? state msg)
         (case topic
@@ -80,7 +84,7 @@
 
 
 (defn bookmark-handler
-  "Handle incoming requests"
+  "Socket handling"
   [request]
   (with-channel request channel
     (on-close channel
@@ -101,7 +105,6 @@
                         (-> @server-state :authenticated-tokens (dissoc (:token in-msg)) vals)))))))))
 
 
-;; TODO convert to component
 (defroutes handler
   (resources "/")
   (GET "/bookmark/ws" [] bookmark-handler)
@@ -149,8 +152,5 @@
   (def server (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
   (server)
-
-  (get-all-bookmarks (:conn @server-state))
-
 
 )
