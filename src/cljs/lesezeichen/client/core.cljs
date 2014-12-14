@@ -11,7 +11,6 @@
   (:require-macros [kioo.om :refer [defsnippet deftemplate]]
                    [cljs.core.async.macros :refer [go go-loop]]))
 
-
 (enable-console-print!)
 
 (def uri (goog.Uri. js/location.href))
@@ -106,7 +105,6 @@
                                                  (println "Info: Store cleared!"))))})
 
 
-
 ;; --- MAIN VIEW ---
 (defsnippet url "templates/bookmarks.html" [:.list-group-item]
   [{:keys [email title url ts]}]
@@ -114,6 +112,18 @@
                       (content (if (= "" title) url title)))
    ;;[:.url-user] (content email)
    [:.url-ts] (content (.toLocaleString ts))})
+
+(defsnippet welcome "templates/welcome" [:#register-message]
+  [app owner state]
+  {[:#sign-up-username] (do-> (set-attr :value (:sign-up-username state))
+                              (listen :on-change #(handle-text-change % owner :sign-up-username)))
+   [:#sign-up-mail] (do-> (set-attr :value (:sign-up-email state))
+                          (listen :on-change #(handle-text-change % owner :sign-up-email)
+                                  :on-key-down #(if (= (.-keyCode %) 10)
+                                                  (send-registry app owner)
+                                                  (when (= (.-which %) 13)
+                                                    (when (.-ctrlKey %)
+                                                      (send-registry app owner))))))})
 
 
 (deftemplate bookmarks "templates/bookmarks.html"
@@ -183,7 +193,7 @@
                         :verify-token (do
                                         (om/transact! app :user (fn [old new] (assoc-in old [:token-status] data)))
                                         (case data
-                                          :valid (>! ws-channel {:topic :get-all-bookmarks :data nil :token (:token local-store)})
+                                          :valid (>! ws-channel {:topic :get-user-bookmarks :data (:email local-store) :token (:token local-store)})
                                           :invalid (om/set-state! owner :info-text "invalid token")
                                           :expired (om/set-state! owner :info-text "token expired")))
                         (println "Unknown topic"))
@@ -202,7 +212,10 @@
   [app owner]
   (reify
     om/IInitState
-    (init-state [_] {:url-input-text "" :search-text ""})
+    (init-state [_] {:url-input-text ""
+                     :search-text ""
+                     :sign-up-mail ""
+                     :sign-up-username ""})
     om/IRenderState
     (render-state [this state] (bookmarks app owner state))))
 
