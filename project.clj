@@ -10,14 +10,15 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/clojurescript "0.0-2371"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [org.clojure/core.memoize "0.5.6"]
+                 [org.clojure/core.memoize "0.5.6"] ;; needed for figwheel
 
                  [http-kit "2.1.19"]
                  [ring "1.3.1"]
                  [com.cemerick/friend "0.2.1"]
                  [enlive "1.1.5"]
                  [compojure "1.2.1"]
-                 [com.draines/postal "1.11.1"] [com.taoensso/timbre "3.3.1"]
+                 [com.draines/postal "1.11.1"]
+                 [com.taoensso/timbre "3.3.1"]
 
                  [com.datomic/datomic-free "0.9.4899"]
 
