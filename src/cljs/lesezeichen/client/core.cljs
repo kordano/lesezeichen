@@ -113,7 +113,7 @@
    ;;[:.url-user] (content email)
    [:.url-ts] (content (.toLocaleString ts))})
 
-(defsnippet welcome "templates/welcome" [:#register-message]
+#_(defsnippet welcome "templates/welcome" [:#register-message]
   [app owner state]
   {[:#sign-up-username] (do-> (set-attr :value (:sign-up-username state))
                               (listen :on-change #(handle-text-change % owner :sign-up-username)))
