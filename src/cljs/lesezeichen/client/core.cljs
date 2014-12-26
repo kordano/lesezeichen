@@ -87,7 +87,7 @@
 (deftemplate nav "templates/navbar.html"
   [app owner state]
   {[:#brand] (content "Lesezeichen")
-   [:#nav-current-user] (content (-> app :user :email))
+   [:#nav-current-user] (content (or (-> app :user :email) "Not registered yet"))
    [:#signup-modal] (if (om/get-state owner :sign-up-dialog)
                       (add-class :in)
                       (remove-class :in))
@@ -150,6 +150,7 @@
                                       (:bookmarks app)))]
                            (map #(url %) (sort-by :ts > bms))))
    [:#bookmark-btn] (listen :on-click (fn [e] (send-bookmark app owner)))})
+
 
 
 ;; --- VIEWS ---

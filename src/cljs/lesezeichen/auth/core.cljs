@@ -10,6 +10,7 @@
   (:require-macros [kioo.om :refer [defsnippet deftemplate]]
                    [cljs.core.async.macros :refer [go go-loop]]))
 
+
 (enable-console-print!)
 
 (def app-state (atom {:ws nil :auth nil}))
