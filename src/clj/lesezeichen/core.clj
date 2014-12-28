@@ -92,10 +92,7 @@
   (with-channel request channel
     (on-close channel
               (fn [status]
-                (swap!
-                 server-state update-in [:authenticated-tokens]
-                 (fn [token-map ch] (dissoc token-map ch))
-                 channel)))
+                (swap! server-state update-in [:authenticated-tokens] dissoc channel)))
     (on-receive channel
                 (fn [msg]
                   (let [in-msg (read-string msg)
@@ -150,10 +147,13 @@
 
 (comment
 
-  (init server-state "resources/server-config.edn")
+  (init server-state "opt/server-config.edn")
 
   (def server (run-server (site #'handler) {:port (:port @server-state) :join? false}))
 
   (server)
+
+
+  @server-state
 
 )
