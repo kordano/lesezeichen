@@ -82,12 +82,11 @@
         (om/set-state! owner :signup-text "")))))
 
 
-
 ;; --- NAVBAR ---
 (deftemplate nav "templates/navbar.html"
   [app owner state]
   {[:#brand] (content "Lesezeichen")
-   [:#nav-current-user] (content (or (-> app :user :email) "Not registered yet"))
+   [:#nav-current-user] (content (or (-> app :user :email) "Not registered yet!"))
    [:#signup-modal] (if (om/get-state owner :sign-up-dialog)
                       (add-class :in)
                       (remove-class :in))
@@ -105,6 +104,7 @@
                                                  (println "Info: Store cleared!"))))})
 
 
+
 ;; --- MAIN VIEW ---
 (defsnippet url "templates/bookmarks.html" [:.list-group-item]
   [{:keys [email title url ts]}]
@@ -112,6 +112,7 @@
                       (content (if (= "" title) url title)))
    ;;[:.url-user] (content email)
    [:.url-ts] (content (.toLocaleString ts))})
+
 
 #_(defsnippet welcome "templates/welcome" [:#register-message]
   [app owner state]
@@ -227,6 +228,7 @@
  nav-view
  app-state
  {:target (. js/document (getElementById "navbar-container"))})
+
 
 (om/root
  bookmark-view
