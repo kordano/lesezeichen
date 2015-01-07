@@ -20,7 +20,7 @@ Then visit <http://localhost:8087/>
 
 ## License
 
-Copyright © 2014 Konrad Kühne
+Copyright © 2014-2015 Konrad Kühne
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
