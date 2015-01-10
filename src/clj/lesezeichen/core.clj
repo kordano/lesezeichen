@@ -121,7 +121,7 @@
 
 
 (defn init-db [state]
-  (let [conn (scratch-conn)]
+  (let [conn (db-conn)]
     (swap! state #(assoc %1 :conn %2) conn))
   (init-schema (:conn @state) (:schema @state))
   state)
