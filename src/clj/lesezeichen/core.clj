@@ -74,9 +74,7 @@
           :get-all-bookmarks {:topic topic :data (get-all-bookmarks conn)}
           :sign-up {:topic topic :data (add-user conn (assoc data :host (:mail-host @state) :port (:mail-port @state) :host-name (:host-name @state)))}
           :register-device {:topic topic :data (register-device conn data)}
-          :add-bookmark (do
-                          (swap! state #(update-in % [:recent-bookmarks] (fn [old new] (take 50 (conj old new))) ))
-                          {:topic topic :data (add-bookmark conn (assoc data :title (fetch-url-title (:url data))))})
+          :add-bookmark {:topic topic :data (add-bookmark conn (assoc data :title (fetch-url-title (:url data))))}
           :verify-token (handle-token state channel msg)
           {:topic :error :data :unknown-request})
         {:topic :error :data :not-authorized})))
