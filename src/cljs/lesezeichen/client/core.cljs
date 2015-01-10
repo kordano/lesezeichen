@@ -41,13 +41,6 @@
   (om/set-state! owner text (.. e -target -value)))
 
 
-(defn show-signup-dialog
-  "SHow and hide signup-dialog"
-  [app owner]
-  (let [signup-dialog-status (om/get-state owner :sign-up-dialog)]
-    (om/set-state! owner :sign-up-dialog (not signup-dialog-status))))
-
-
 (defn get-local-store
   "Retrieve data from local html storage"
   [db]
@@ -65,8 +58,7 @@
       (if (= :valid token-status)
         (do
           (go (>! ws {:topic :add-bookmark :data {:email email :url url} :token token}))
-          (om/set-state! owner :url-input-text ""))
-        (show-signup-dialog app owner)))))
+          (om/set-state! owner :url-input-text ""))))))
 
 
 (defn send-registry
@@ -87,9 +79,6 @@
   [app owner state]
   {[:#brand] (content "Lesezeichen")
    [:#nav-current-user] (content (or (-> app :user :email) "Not registered yet!"))
-   [:#signup-modal] (if (om/get-state owner :sign-up-dialog)
-                      (add-class :in)
-                      (remove-class :in))
    [:#sign-up-input] (do-> (set-attr :value (:signup-text state))
                            (listen :on-change #(handle-text-change % owner :signup-text)
                                    :on-key-down #(if (= (.-keyCode %) 10)
@@ -110,14 +99,14 @@
   [{:keys [email title url ts]}]
   {[:.url-text] (do-> (set-attr :href url)
                       (content (if (= "" title) url title)))
-   ;;[:.url-user] (content email)
    [:.url-ts] (content (.toLocaleString ts))})
 
 
-#_(defsnippet welcome "templates/welcome" [:#register-message]
+(defsnippet welcome "templates/welcome.html" [:#register-message]
   [app owner state]
   {[:#sign-up-username] (do-> (set-attr :value (:sign-up-username state))
                               (listen :on-change #(handle-text-change % owner :sign-up-username)))
+   [:#-sign-up-btn] (listen :on-click (fn [e] (send-registry app owner)))
    [:#sign-up-mail] (do-> (set-attr :value (:sign-up-email state))
                           (listen :on-change #(handle-text-change % owner :sign-up-email)
                                   :on-key-down #(if (= (.-keyCode %) 10)
@@ -127,16 +116,24 @@
                                                       (send-registry app owner))))))})
 
 
-(deftemplate bookmarks "templates/bookmarks.html"
+(defsnippet bookmark-composer "templates/welcome.html" [:#bookmark-composer]
   [app owner state]
-  {[:#bm-header] (content "Recent bookmarks")
-   [:#url-input] (do-> (set-attr :value (:url-input-text state))
+  {[:#url-input] (do-> (set-attr :value (:url-input-text state))
                        (listen :on-change #(handle-text-change % owner :url-input-text)
                                :on-key-down #(if (= (.-keyCode %) 10)
                                                (send-bookmark app owner)
                                                (when (= (.-which %) 13)
                                                  (when (.-ctrlKey %)
                                                    (send-bookmark app owner))))))
+   [:#bookmark-btn] (listen :on-click (fn [e] (send-bookmark app owner)))})
+
+
+(deftemplate bookmarks "templates/bookmarks.html"
+  [app owner state]
+  {[:#bm-header] (content "Recent bookmarks")
+   [:#interaction-container] (if (:valid (-> app :user :token-status))
+                               (substitute (bookmark-composer app owner state))
+                               (substitute (welcome app owner state)))
    [:#search-input]  (do-> (set-attr :value (:search-text state))
                            #_(when (:valid (-> app :user :token-status)) (remove-attr :disabled))
                            (listen :on-change #(handle-text-change % owner :search-text)))
@@ -149,9 +146,7 @@
                                           (-> state :search-text trim lower-case re-pattern)
                                           (-> bookmark :title lower-case))))
                                       (:bookmarks app)))]
-                           (map #(url %) (sort-by :ts > bms))))
-   [:#bookmark-btn] (listen :on-click (fn [e] (send-bookmark app owner)))})
-
+                           (map #(url %) (sort-by :ts > bms))))})
 
 
 ;; --- VIEWS ---
@@ -162,7 +157,6 @@
     om/IInitState
     (init-state [_]
       {:signup-text ""
-       :sign-up-dialog false
        :info-text ""})
     om/IWillMount
     (will-mount [_]
@@ -206,7 +200,6 @@
     om/IRenderState
     (render-state [this state]
       (nav app owner state))))
-
 
 
 (defn bookmark-view

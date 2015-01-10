@@ -1,4 +1,4 @@
-{:build :prod
+{:build :dev
  :behind-proxy true
  :proto "https"
  :version 0.02

@@ -54,8 +54,8 @@
      [{:db/id (d/tempid :db.part/user)
        :user/auth-code auth-code
        :user/email email}])
-    (debug (pr-str (send-registry email auth-code host port host-name)))
-    (debug auth-code)
+    (info (pr-str (send-registry email auth-code host port host-name)))
+    (info auth-code)
     :user-created))
 
 
@@ -160,7 +160,9 @@
         db (d/db conn)]
     (let [uid (ffirst (d/q query db auth email))]
       (if uid
-        (transact-token conn uid)
+        (do
+          (info (str "Device registered for " email))
+          (transact-token conn uid))
         (do
           (debug "Wrong email/auth combination")
           :registry-failed)))))

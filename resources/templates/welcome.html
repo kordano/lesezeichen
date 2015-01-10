@@ -1,18 +1,22 @@
 <html>
-   <head>
-    <meta title="generator" content="content" charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link id="bootstrap-css" rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"/>
-    <link id="bootstrap-theme-css" rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css"/>
-  </head>
    <body>
+     <!-- welcome message and registration -->
      <div class="jumbotron" id="register-message">
        <h2>Welcome to Lesezeichen</h2>
-       <input class="form-control" type="email" id="sign-up-username" placeholder="Name"></input>
-       <input class="form-control" type="email" id="sign-up-email" placeholder="E-Mail"></input>
-       <p><a class="btn btn-primary btn-lg sign-up-btn" href="/" role="button">Sign up</a></p>
+         <input class="form-control col-md-2" type="email" id="sign-up-username" placeholder="Name"></input>
+         <input class="form-control" type="email" id="sign-up-email" placeholder="E-Mail"></input>
+         <p><a class="btn btn-primary sign-up-btn" href="/" role="button">Sign up</a></p>
      </div>
-     <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-     <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+     <!-- bookmark composer -->
+     <div class="input-group input-group-lg" id="bookmark-composer">
+         <input type="text" class="form-control" placeholder="Save URL..." id="url-input">
+         <span class="input-group-btn" id="general-input-btn">
+           <button class="btn btn-primary btn-lg" id="bookmark-btn">
+             <span class="glyphicon glyphicon-bookmark"></span>
+           </button>
+         </span>
+       </div>
+
    </body>
 </html>
