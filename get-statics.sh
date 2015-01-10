@@ -10,8 +10,8 @@ mkdir bootstrap-material
 # bootstrap
 wget https://github.com/twbs/bootstrap/releases/download/v3.2.0/bootstrap-3.2.0-dist.zip -O bootstrap.zip
 unzip bootstrap.zip -d bootstrap-3.2.0
-mv bootstrap-3.2.0/dist/* bootstrap-3.2.0
-rm -r bootstrap-3.2.0/dist
+mv bootstrap-3.2.0/bootstrap-3.2.0-dist/* bootstrap-3.2.0
+rm -r bootstrap-3.2.0/bootstrap-3.2.0-dist
 rm bootstrap.zip
 
 
