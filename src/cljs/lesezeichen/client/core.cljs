@@ -189,7 +189,7 @@
                         :verify-token (do
                                         (om/transact! app :user (fn [old new] (assoc-in old [:token-status] data)))
                                         (case data
-                                          :valid (>! ws-channel {:topic :get-user-bookmarks :data (:email local-store) :token (:token local-store)})
+                                          :valid (>! ws-channel {:topic :get-all-bookmarks :data (:email local-store) :token (:token local-store)})
                                           :invalid (om/set-state! owner :info-text "invalid token")
                                           :expired (om/set-state! owner :info-text "token expired")))
                         (println "Unknown topic"))
