@@ -131,7 +131,7 @@
 (deftemplate bookmarks "templates/bookmarks.html"
   [app owner state]
   {[:#bm-header] (content "Recent bookmarks")
-   [:#interaction-container] (if (:valid (-> app :user :token-status))
+   [:#interaction-container] (if (= :valid (-> app :user :token-status))
                                (substitute (bookmark-composer app owner state))
                                (substitute (welcome app owner state)))
    [:#search-input]  (do-> (set-attr :value (:search-text state))
