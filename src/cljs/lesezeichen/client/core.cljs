@@ -64,7 +64,7 @@
 (defn send-registry
   "Send mail for sign up"
   [app owner]
-  (let [email (om/get-state owner :signup-text)
+  (let [email (om/get-state owner :sign-up-email)
         ws (-> app deref :ws)]
     (if (clojure.string/blank? email)
       (println "INFO: no mail")
@@ -79,14 +79,6 @@
   [app owner state]
   {[:#brand] (content "Lesezeichen")
    [:#nav-current-user] (content (or (-> app :user :email) "Not registered yet!"))
-   [:#sign-up-input] (do-> (set-attr :value (:signup-text state))
-                           (listen :on-change #(handle-text-change % owner :signup-text)
-                                   :on-key-down #(if (= (.-keyCode %) 10)
-                                                   (send-registry app owner)
-                                                   (when (= (.-which %) 13)
-                                                     (when (.-ctrlKey %)
-                                                       (send-registry app owner))))))
-   [:#modal-signup-btn] (listen :on-click (fn [e] (send-registry app owner)))
    [:#general-info] (content (om/get-state owner :info-text))
    [:#clear-db-btn] (listen :on-click (fn [e] (do (.clear (.-localStorage js/window))
                                                  (om/transact! app :user (fn [old] (assoc old :email "")))
@@ -106,8 +98,8 @@
   [app owner state]
   {[:#sign-up-username] (do-> (set-attr :value (:sign-up-username state))
                               (listen :on-change #(handle-text-change % owner :sign-up-username)))
-   [:#-sign-up-btn] (listen :on-click (fn [e] (send-registry app owner)))
-   [:#sign-up-mail] (do-> (set-attr :value (:sign-up-email state))
+   [:#sign-up-btn] (listen :on-click (fn [e] (send-registry app owner)))
+   [:#sign-up-email] (do-> (set-attr :value (:sign-up-email state))
                           (listen :on-change #(handle-text-change % owner :sign-up-email)
                                   :on-key-down #(if (= (.-keyCode %) 10)
                                                   (send-registry app owner)
@@ -209,7 +201,7 @@
     om/IInitState
     (init-state [_] {:url-input-text ""
                      :search-text ""
-                     :sign-up-mail ""
+                     :sign-up-email ""
                      :sign-up-username ""})
     om/IRenderState
     (render-state [this state] (bookmarks app owner state))))
