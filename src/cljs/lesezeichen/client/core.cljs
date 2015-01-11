@@ -71,7 +71,7 @@
       (do
         (go (>! ws {:topic :sign-up :data {:email email}}))
         (om/transact! app :user (fn [old] email))
-        (om/set-state! owner :signup-text "")))))
+        (om/set-state! owner :sign-up-email "")))))
 
 
 ;; --- NAVBAR ---
@@ -92,6 +92,7 @@
   {[:.url-text] (do-> (set-attr :href url)
                       (content (if (= "" title) url title)))
    [:.url-ts] (content (.toLocaleString ts))})
+
 
 
 (defsnippet welcome "templates/welcome.html" [:#register-message]
