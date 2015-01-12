@@ -51,7 +51,7 @@
 (defn authorized?
   "Check authorization status of given topic and token"
   [state {:keys [topic token]}]
-  (if (#{:sign-up :register-device :verify-token :error} topic)
+  (if (#{:sign-up :register-device :verify-token :error :get-recent-bookmarks} topic)
     true
     (= :valid (-> @state :authenticated-tokens (get token) :status))))
 
@@ -72,9 +72,13 @@
         (case topic
           :get-user-bookmarks {:topic topic :data (get-user-bookmarks conn data)}
           :get-all-bookmarks {:topic topic :data (get-all-bookmarks conn)}
+          :get-recent-bookmarks {:topic topic :data (:recent-bookmarks @state)}
           :sign-up {:topic topic :data (add-user conn (assoc data :host (:mail-host @state) :port (:mail-port @state) :host-name (:host-name @state)))}
           :register-device {:topic topic :data (register-device conn data)}
-          :add-bookmark {:topic topic :data (add-bookmark conn (assoc data :title (fetch-url-title (:url data))))}
+          :add-bookmark (let [new-bm (get-all-bookmarks conn)]
+                          (do
+                            (swap! state (fn [s] (update-in s :recent-bookmarks conj)))
+                            {:topic topic :data new-bm}))
           :verify-token (handle-token state channel msg)
           {:topic :error :data :unknown-request})
         {:topic :error :data :not-authorized})))
@@ -119,7 +123,7 @@
 
 
 (defn init-db [state]
-  (let [conn (db-conn)]
+  (let [conn #_(scratch-conn) (db-conn)]
     (swap! state #(assoc %1 :conn %2) conn))
   (init-schema (:conn @state) (:schema @state))
   state)
