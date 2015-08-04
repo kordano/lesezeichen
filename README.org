@@ -1,6 +1,5 @@
 #+TITLE: lesezeichen
 #+CATEGORY: lesezeichen
-#+TAGS: review bug feature research doc test
 #+TODO: TODO(t) STARTED(s!) | FIXED(f!) DONE(d!) 
 #+TODO: CANCELED(c@)
 #+STARTUP: overview 
@@ -25,7 +24,26 @@ lein run opt/server-config.edn
 Then visit <http://localhost:8087/>
 
 ***** TODOs
-
+****** CANCELED add geschichte replication			    :feature:
+       CLOSED: [2015-08-04 Di 10:48] DEADLINE: <2015-07-31 Fr>
+       :LOGBOOK:  
+       - State "CANCELED"   from "TODO"       [2015-08-04 Di 10:48] \\
+	 no time
+       :END:      
+      :PROPERTIES:
+      :Created: [2015-06-25 Do 21:45]
+      :Assigned_to: kordano
+      :END:
+****** CANCELED remove bootstrap.js, add flex box		   :refactor:
+       CLOSED: [2015-08-04 Di 10:48] DEADLINE: <2015-07-31 Fr>
+       :LOGBOOK:  
+       - State "CANCELED"   from "TODO"       [2015-08-04 Di 10:48] \\
+	 no time
+       :END:      
+      :PROPERTIES:
+      :Created: [2015-06-23 Di 16:55]
+      :Assigned_to: kordano
+      :END:
 ***** License
 
 Copyright © 2014-2015 Konrad Kühne
